@@ -33,14 +33,18 @@
         <a href="#home" data-route="home"><span class="nav-ico">⌂</span><span>Genel bakış</span></a>
         <a href="#curriculum" data-route="curriculum"><span class="nav-ico">▤</span><span>Öğrenme yolu</span><span class="nav-count" id="course-count">—</span></a>
         <a href="#labs" data-route="labs"><span class="nav-ico">⌘</span><span>Laboratuvarlar</span><span class="nav-count">04</span></a>
+        <details class="nav-advanced" id="advanced-nav"><summary>Atölyeler <span>5 çalışma</span></summary><div class="nav-advanced-links">
         <a href="#workshop" data-route="workshop"><span class="nav-ico">⤳</span><span>Task Lifecycle Workshop</span></a>
         <a href="#context-studio" data-route="context-studio"><span class="nav-ico">◩</span><span>Context & Cache Studio</span></a>
         <a href="#compaction-studio" data-route="compaction-studio"><span class="nav-ico">⧉</span><span>Compaction & Handoff</span></a>
         <a href="#reliability-eval" data-route="reliability-eval"><span class="nav-ico">▥</span><span>Reliability Evaluation</span></a>
         <a href="#eval-robustness" data-route="eval-robustness"><span class="nav-ico">⌁</span><span>Evaluation Robustness</span></a>
+        </div></details>
+        <details class="nav-aux" id="aux-nav"><summary>Diğer kaynaklar</summary><div class="nav-aux-links">
         <a href="#architecture" data-route="architecture"><span class="nav-ico">◇</span><span>Mimari harita</span></a>
         <a href="#glossary" data-route="glossary"><span class="nav-ico">≡</span><span>Terim sözlüğü</span></a>
         <a href="#resources" data-route="resources"><span class="nav-ico">↗</span><span>Resmî kaynaklar</span></a>
+        </div></details>
       </nav>
       <div class="sidebar-sep"></div>
       <p class="nav-eyebrow">ÖĞRENME DURUMU</p>
@@ -49,13 +53,13 @@
         <div class="progress-track"><div id="sidebar-bar" class="progress-fill" style="width:0%"></div></div>
         <span class="progress-note">İlerlemen bu tarayıcıda saklanır.</span>
       </div>
-      <div class="sidebar-bottom"><span class="online-pulse"></span> API anahtarı gerekmez <span class="build-tag">v0.7</span></div>
+      <div class="sidebar-bottom"><span class="online-pulse"></span> API anahtarı gerekmez <span class="build-tag">v0.8</span></div>
     </aside>
     <div class="main-column">
       <header class="topbar">
         <div class="mobile-brand">agent<span>systems</span> <small>ACADEMY</small></div>
         <div class="topbar-context"><span class="crumb-root">LEARNING ENVIRONMENT</span><span class="crumb-slash">/</span><span id="crumb-current">Overview</span></div>
-        <div class="topbar-right"><span class="local-badge"><span class="online-pulse"></span> LOCAL-FIRST</span><button class="search-trigger" id="search-trigger" type="button" aria-label="Derslerde ara"><span>⌕</span> Ara <kbd>/</kbd></button></div>
+        <div class="topbar-right"><span class="local-badge"><span class="online-pulse"></span> LOCAL-FIRST</span><button class="focus-toggle" id="focus-toggle" type="button" aria-pressed="false" aria-label="Odak modunu aç">Odak modu</button><button class="search-trigger" id="search-trigger" type="button" aria-label="Derslerde ara"><span>⌕</span> Ara <kbd>/</kbd></button></div>
       </header>
       <main id="page" tabindex="-1"><div class="loading">Eğitim içeriği yükleniyor...</div></main>
       <footer class="page-footer"><span>AGENT SYSTEMS ACADEMY <span class="muted-dot">·</span> FIELD NOTES FOR BUILDERS</span><span>Kaynaklar: resmî dokümantasyon <span class="muted-dot">·</span> 27.10.2026</span></footer>

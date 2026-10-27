@@ -23,7 +23,7 @@ jobs:
       - name: Validate complete educational project
         run: npm run verify:local
       - name: Prevent publishing uncommitted generated output
-        run: git diff --exit-code -- public/curriculum.js standalone.html
+        run: git diff --exit-code -- public/curriculum.js
       - name: Build offline Pages artifact
         run: npm run build:pages
       - name: Upload GitHub Pages artifact

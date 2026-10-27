@@ -144,3 +144,7 @@ npm run build:pages
 The generated `_site/` directory is a static artifact, not tracked source. The Pages workflow publishes the **portable HTML edition** of the same educational app; it does not claim to have compiled Astro. The initial public URL is available only **after** repository creation, enabling Settings → Pages → GitHub Actions, and a successful deployment.
 
 Repository visibility is independent of source-code licensing. No license has been selected for this project.
+
+## v0.8 visual design
+
+The interface uses a quieter reading-first hierarchy. Workspaces are grouped under **Atölyeler**, references under **Diğer kaynaklar**, and every lesson has an optional, reversible **Odak modu**. Reading mode never changes lesson progress, simulator outcomes, or permissions. See `docs/RELEASE-NOTES-v0.8.md`.
