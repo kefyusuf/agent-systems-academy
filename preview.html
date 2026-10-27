@@ -1,0 +1,67 @@
+<!-- Static portable preview. Source is src/pages/index.astro. -->
+
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0c1421" />
+  <meta name="description" content="Kodlama ajanları, harness, MCP, skills, context engineering, prompt caching ve orkestrasyon için yerel, etkileşimli eğitim platformu." />
+  <title>Agent Systems Academy · Yerel Öğrenme Laboratuvarı</title>
+  <meta name="academy-download-base" content="./public/downloads/" />
+  <link rel="icon" href="./public/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./public/styles.css" />
+  <script src="./public/curriculum.js" defer></script>
+  <script src="./public/labs-core.js" defer></script>
+  <script src="./public/workshop-core.js" defer></script>
+  <script src="./public/context-studio-core.js" defer></script>
+  <script src="./public/compaction-core.js" defer></script>
+  <script src="./public/reliability-core.js" defer></script>
+  <script src="./public/robustness-core.js" defer></script>
+  <script src="./public/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Ana gezinme">
+      <a class="brand" href="#home" aria-label="Agent Systems Academy ana sayfa">
+        <span class="brand-symbol" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        <span class="brand-words"><strong>agent<span>systems</span></strong><small>ACADEMY / LOCAL EDITION</small></span>
+      </a>
+      <div class="sidebar-sep"></div>
+      <p class="nav-eyebrow">WORKSPACE</p>
+      <nav class="primary-nav" aria-label="Bölümler">
+        <a href="#home" data-route="home"><span class="nav-ico">⌂</span><span>Genel bakış</span></a>
+        <a href="#curriculum" data-route="curriculum"><span class="nav-ico">▤</span><span>Öğrenme yolu</span><span class="nav-count" id="course-count">—</span></a>
+        <a href="#labs" data-route="labs"><span class="nav-ico">⌘</span><span>Laboratuvarlar</span><span class="nav-count">04</span></a>
+        <a href="#workshop" data-route="workshop"><span class="nav-ico">⤳</span><span>Task Lifecycle Workshop</span></a>
+        <a href="#context-studio" data-route="context-studio"><span class="nav-ico">◩</span><span>Context & Cache Studio</span></a>
+        <a href="#compaction-studio" data-route="compaction-studio"><span class="nav-ico">⧉</span><span>Compaction & Handoff</span></a>
+        <a href="#reliability-eval" data-route="reliability-eval"><span class="nav-ico">▥</span><span>Reliability Evaluation</span></a>
+        <a href="#eval-robustness" data-route="eval-robustness"><span class="nav-ico">⌁</span><span>Evaluation Robustness</span></a>
+        <a href="#architecture" data-route="architecture"><span class="nav-ico">◇</span><span>Mimari harita</span></a>
+        <a href="#glossary" data-route="glossary"><span class="nav-ico">≡</span><span>Terim sözlüğü</span></a>
+        <a href="#resources" data-route="resources"><span class="nav-ico">↗</span><span>Resmî kaynaklar</span></a>
+      </nav>
+      <div class="sidebar-sep"></div>
+      <p class="nav-eyebrow">ÖĞRENME DURUMU</p>
+      <div class="sidebar-progress">
+        <div class="mini-progress-head"><span>Tamamlanan dersler</span><strong id="sidebar-done">0 / 0</strong></div>
+        <div class="progress-track"><div id="sidebar-bar" class="progress-fill" style="width:0%"></div></div>
+        <span class="progress-note">İlerlemen bu tarayıcıda saklanır.</span>
+      </div>
+      <div class="sidebar-bottom"><span class="online-pulse"></span> API anahtarı gerekmez <span class="build-tag">v0.7</span></div>
+    </aside>
+    <div class="main-column">
+      <header class="topbar">
+        <div class="mobile-brand">agent<span>systems</span> <small>ACADEMY</small></div>
+        <div class="topbar-context"><span class="crumb-root">LEARNING ENVIRONMENT</span><span class="crumb-slash">/</span><span id="crumb-current">Overview</span></div>
+        <div class="topbar-right"><span class="local-badge"><span class="online-pulse"></span> LOCAL-FIRST</span><button class="search-trigger" id="search-trigger" type="button" aria-label="Derslerde ara"><span>⌕</span> Ara <kbd>/</kbd></button></div>
+      </header>
+      <main id="page" tabindex="-1"><div class="loading">Eğitim içeriği yükleniyor...</div></main>
+      <footer class="page-footer"><span>AGENT SYSTEMS ACADEMY <span class="muted-dot">·</span> FIELD NOTES FOR BUILDERS</span><span>Kaynaklar: resmî dokümantasyon <span class="muted-dot">·</span> 27.10.2026</span></footer>
+    </div>
+  </div>
+  <dialog id="search-dialog" class="search-modal" aria-label="İçerikte ara"><div class="search-top"><span>⌕</span><input id="global-search" type="search" placeholder="Ders, kavram veya araç ara..." autocomplete="off" /><button id="search-close" type="button" aria-label="Kapat">ESC</button></div><div id="search-results" class="search-results"></div></dialog>
+  <div id="toast" role="status" aria-live="polite" class="toast"></div>
+</body>
+</html>
