@@ -19,7 +19,7 @@ function fixture(hash){
     querySelectorAll(){return [];},
     addEventListener(){},
   };
-  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,EvidenceInjectionEngine:globalThis.EvidenceInjectionEngine,OracleReliabilityEngine:globalThis.OracleReliabilityEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
+  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,EvidenceInjectionEngine:globalThis.EvidenceInjectionEngine,OracleReliabilityEngine:globalThis.OracleReliabilityEngine,IndependentOracleEngine:globalThis.IndependentOracleEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
   vm.runInNewContext(app,context,{filename:'public/app.js'});
   return {page,nodes,handlers};
 }
@@ -258,5 +258,32 @@ test('v0.11 oracle mutant detects false accepts and false rejects without author
  click('[data-oracle-mode]',{oracleMode:'mutant'});
  assert.match(page.innerHTML,/False reject: 1/);
  assert.match(page.innerHTML,/FALSE_REJECT/);
+ assert.doesNotMatch(page.innerHTML,/PRODUCTION_AUTHORIZED/);
+});
+
+test('v0.12 independent witness appears only inside zero-FN case and stays collapsed',()=>{
+ const {page,handlers}=fixture('#eval-robustness');
+ assert.doesNotMatch(page.innerHTML,/id="oracle-independent"/);
+ const click=(selector,dataset)=>handlers.click({target:{closest(s){return s.split(',').includes(selector)?{dataset}:null;}}});
+ click('[data-injection-case]',{injectionCase:'3'});
+ assert.match(page.innerHTML,/<details class="oracle-independent" id="oracle-independent" >/);
+ assert.equal(page.innerHTML.match(/data-witness-mode=/g)?.length,3);
+ assert.match(page.innerHTML,/İki kontrol: ACCEPT/);
+ assert.match(page.innerHTML,/FIXTURE_ONLY/);
+});
+test('v0.12 witness catches common-mode duplicate and stale revision without new navigation',()=>{
+ const {page,handlers}=fixture('#eval-robustness');
+ const click=(selector,dataset)=>handlers.click({target:{closest(s){return s.split(',').includes(selector)?{dataset}:null;}}});
+ click('[data-injection-case]',{injectionCase:'3'});
+ click('[data-witness-mode]',{witnessMode:'duplicate-id'});
+ assert.match(page.innerHTML,/id="oracle-independent" open/);
+ assert.match(page.innerHTML,/İki kontrol: ACCEPT/);
+ assert.match(page.innerHTML,/CLAIM_BLOCKED/);
+ assert.match(page.innerHTML,/Benzersiz kimlik: <strong>12/);
+ click('[data-witness-mode]',{witnessMode:'stale-revision'});
+ assert.match(page.innerHTML,/r41/);
+ assert.match(page.innerHTML,/CLAIM_BLOCKED/);
+ click('[data-witness-mode]',{witnessMode:'healthy'});
+ assert.match(page.innerHTML,/FIXTURE_ONLY/);
  assert.doesNotMatch(page.innerHTML,/PRODUCTION_AUTHORIZED/);
 });
