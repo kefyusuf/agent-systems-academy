@@ -338,3 +338,15 @@ body.reading-mode .lesson-block p{font-size:16px}
 }
 @media(max-width:640px){.hero{padding:34px 20px}.hero h1{font-size:34px}.hero p{font-size:14px}.hero-foot{gap:14px}.module-card{min-height:190px}.home-labs{padding:24px}.page-footer{font-size:10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
+
+/* v0.14: quiet, keyboard-visible accessibility details. */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:fixed;z-index:1000;top:10px;left:10px;transform:translateY(-180%);padding:10px 16px;background:var(--panel);border:2px solid var(--accent);border-radius:6px;color:var(--ink);font-weight:650}
+.skip-link:focus-visible{transform:translateY(0);outline:2px solid var(--accent);outline-offset:2px}
+.oracle-self-check,.oracle-independent,.oracle-adjudication{max-width:100%;min-width:0;overflow-wrap:anywhere}
+.oracle-self-check summary,.oracle-independent summary,.oracle-adjudication summary{cursor:pointer;min-height:44px;padding:10px 8px;line-height:1.5;border-radius:6px;color:var(--ink);font-weight:600}
+.oracle-self-check summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.oracle-independent summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.oracle-adjudication summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eval-chip{min-height:44px;max-width:100%;overflow-wrap:anywhere;white-space:normal;text-align:left}
+@media(max-width:640px){.oracle-self-check,.oracle-independent,.oracle-adjudication{padding-inline:10px}.oracle-self-check .eval-choice-line,.oracle-independent .eval-choice-line,.oracle-adjudication .eval-choice-line{gap:8px}}

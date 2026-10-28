@@ -49,6 +49,12 @@ let witnessMode='healthy';
 let witnessOpen=false;
 let adjudicationOpen=false;
 let adjudicationAction=null;
+function repaintEvaluation(selector,announcement){
+ page.innerHTML=renderEvaluationRobustness();
+ const live=document.querySelector('#academy-live');
+ if(live&&announcement)live.textContent=announcement;
+ if(selector)page.querySelector?.(selector)?.focus?.({preventScroll:true});
+}
 function notify(msg){const t=document.querySelector('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>t.classList.remove('show'),3200);}
 function done(m){return m.lessons.filter(l=>progress.completed.includes(l.id)).length;}
 function status(){const n=progress.completed.length;const total=courses.length;document.querySelector('#sidebar-done').textContent=`${n} / ${total}`;document.querySelector('#sidebar-bar').style.width=`${n/total*100}%`;document.querySelector('#course-count').textContent=D.modules.length;}
@@ -332,18 +338,22 @@ function onClick(e){
 const adjudication=e.target.closest('[data-adjudication-action]');
 if(adjudication){
  const action=adjudication.dataset.adjudicationAction;
- if(J.options(witnessMode).some(o=>o.id===action)){adjudicationAction=action;adjudicationOpen=true;witnessOpen=true;oracleOpen=true;page.innerHTML=renderEvaluationRobustness();}
+ if(J.options(witnessMode).some(o=>o.id===action)){adjudicationAction=action;adjudicationOpen=true;witnessOpen=true;oracleOpen=true;
+  const result=J.choose(witnessMode,action);
+  repaintEvaluation('[data-adjudication-action="'+action+'"]','Kaynak incelemesi: '+result.status);}
  return;
 }
 const witness=e.target.closest('[data-witness-mode]');
 if(witness){const mode=witness.dataset.witnessMode;
- if(I.MODES.some(x=>x.id===mode)){witnessMode=mode;witnessOpen=true;oracleOpen=true;adjudicationAction=null;adjudicationOpen=false;page.innerHTML=renderEvaluationRobustness();}
+ if(I.MODES.some(x=>x.id===mode)){witnessMode=mode;witnessOpen=true;oracleOpen=true;adjudicationAction=null;adjudicationOpen=false;
+  repaintEvaluation('[data-witness-mode="'+mode+'"]','Kayıt kontrolü: '+I.evaluate(mode).status);}
  return;
 }
 const oracle=e.target.closest('[data-oracle-mode]');
 if(oracle){
  const mode=oracle.dataset.oracleMode;
- if(mode==='reference'||mode==='mutant'){oracleMode=mode;oracleOpen=true;page.innerHTML=renderEvaluationRobustness();}
+ if(mode==='reference'||mode==='mutant'){oracleMode=mode;oracleOpen=true;
+  repaintEvaluation('[data-oracle-mode="'+mode+'"]','Oracle öz testi: '+O.evaluate(F.CASES[injectionIndex].id,mode).status);}
  return;
 }
 const injected=e.target.closest('[data-injection-case],[data-injection-mode],[data-injection-choice]');
@@ -408,10 +418,19 @@ const quiz=e.target.closest('[data-quiz]');if(quiz){const l=courses.find(x=>x.id
 const complete=e.target.closest('#complete-lesson');if(complete){const id=complete.dataset.lesson;if(!progress.passed.includes(id)||progress.completed.includes(id))return;progress.completed.push(id);saveProgress();notify('Ders tamamlandı.');render();return;}
 const choice=e.target.closest('[data-router]');if(choice){if(routerAnswered)return;routerAnswered=true;const answer=Number(choice.dataset.router),c=cases[routerIndex],right=answer===c.answer;if(right)routerCorrect++;document.querySelectorAll('[data-router]').forEach(b=>{b.disabled=true;b.classList.toggle('correct',Number(b.dataset.router)===c.answer);b.classList.toggle('wrong',Number(b.dataset.router)===answer&&!right);});document.querySelector('#router-feedback').textContent=(right?'✓ Doğru seçim. ':'Yanlış seçim. ')+c.reason;document.querySelector('#router-next').style.display='inline-flex';document.querySelector('#router-score').textContent=`${routerCorrect} doğru`;return;}
 if(e.target.closest('#router-next')){routerIndex++;renderRouter();return;}if(e.target.closest('#router-reset')){routerIndex=0;routerCorrect=0;renderRouter();return;}}
+// Native <details> toggle events do not bubble; capture phase keeps UI state
+// aligned with user-operated summaries without replacing their keyboard behavior.
+page.addEventListener('toggle',event=>{
+ const target=event.target;
+ if(!page.contains?.(target))return;
+ if(target.id==='oracle-self-check')oracleOpen=target.open;
+ else if(target.id==='oracle-independent')witnessOpen=target.open;
+ else if(target.id==='oracle-adjudication')adjudicationOpen=target.open;
+},true);
 page.addEventListener('click',onClick);
 page.addEventListener('input',e=>{const input=e.target.closest('[data-lab-field]');if(input){const id=input.dataset.labField;labState[id]=Number(input.value);document.querySelector('#out-'+id).textContent=f(labState[id])+(id==='stability'?'%':'');if(currentRoute==='lab'){if(location.hash==='#lab/cache')renderCacheOutput();if(location.hash==='#lab/context')renderContextOutput();}}const filter=e.target.closest('#glossary-filter');if(filter){const val=filter.value;const list=D.glossary.filter(g=>slug(g.term+' '+g.description).includes(slug(val)));document.querySelector('.glossary-grid').innerHTML=list.map(g=>`<div class="glossary-item"><h3>${esc(g.term)}</h3><p>${esc(g.description)}</p></div>`).join('')||'<p>Bu kelimeyle eşleşen terim yok.</p>';document.querySelector('.glossary-tools > span').textContent=list.length+' TERİM';}});
 page.addEventListener('change',e=>{const input=e.target.closest('[data-lab-select]');if(input){labState[input.dataset.labSelect]=input.value;renderPolicyOutput();}});
-window.addEventListener('hashchange',render);
+window.addEventListener('hashchange',()=>{render();page.focus?.({preventScroll:true});});
 const dialog=document.querySelector('#search-dialog'), searchInput=document.querySelector('#global-search');
 function closeSearch(){dialog.close();}function showSearch(){dialog.showModal();searchInput.value='';searchResults('');searchInput.focus();}
 function searchResults(query){const q=slug(query.trim());const found=courses.filter(l=>slug(l.title+' '+l.summary+' '+l.module.title+' '+l.deepDive.mechanism+' '+l.deepDive.failureMode).includes(q)).slice(0,14);const gloss=D.glossary.filter(g=>slug(g.term+' '+g.description).includes(q)).slice(0,5);document.querySelector('#search-results').innerHTML=(q?`<div class="search-result-group">DERSLER (${found.length})</div>`:'<div class="search-result-group">ÖNERİLEN DERSLER</div>')+found.map(l=>`<a href="#lesson/${l.id}" class="search-result"><span>▤</span><div><strong>${esc(l.title)}</strong><small>${esc(l.module.title)}</small></div><span>↗</span></a>`).join('')+(gloss.length&&q?`<div class="search-result-group">SÖZLÜK (${gloss.length})</div>`+gloss.map(g=>`<a href="#glossary" class="search-result"><span>≡</span><div><strong>${esc(g.term)}</strong><small>${esc(g.description)}</small></div><span>↗</span></a>`).join(''):'')+(!found.length&&!gloss.length?'<p class="no-search">Eşleşen içerik bulunamadı.</p>':'');}
