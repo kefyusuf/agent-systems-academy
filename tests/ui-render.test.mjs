@@ -19,7 +19,7 @@ function fixture(hash){
     querySelectorAll(){return [];},
     addEventListener(){},
   };
-  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,EvidenceInjectionEngine:globalThis.EvidenceInjectionEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
+  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,EvidenceInjectionEngine:globalThis.EvidenceInjectionEngine,OracleReliabilityEngine:globalThis.OracleReliabilityEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
   vm.runInNewContext(app,context,{filename:'public/app.js'});
   return {page,nodes,handlers};
 }
@@ -234,4 +234,29 @@ test('v0.10 recovery cannot bypass re-verification and case switch resets the in
  click('[data-injection-mode]',{injectionMode:'injected'});
  assert.match(page.innerHTML,/denominator/);
  assert.match(page.innerHTML,/null/);
+});
+
+test('v0.11 oracle self-check is collapsed by default within existing failure injection section',()=>{
+ const {page}=fixture('#eval-robustness');
+ assert.match(page.innerHTML,/<details class="eval-recovery-plan oracle-self-check" id="oracle-self-check" >/);
+ assert.equal(page.innerHTML.match(/data-oracle-mode=/g)?.length,2);
+ assert.match(page.innerHTML,/FIXTURE_MATCH_ONLY/);
+ assert.match(page.innerHTML,/TRUE_ACCEPT/);
+ assert.match(page.innerHTML,/TRUE_REJECT/);
+ assert.equal(data.modules.length,14);
+ assert.equal(data.labs.length,4);
+});
+test('v0.11 oracle mutant detects false accepts and false rejects without authorizing actions',()=>{
+ const {page,handlers}=fixture('#eval-robustness');
+ const click=(selector,dataset)=>handlers.click({target:{closest(s){return s.split(',').includes(selector)?{dataset}:null;}}});
+ click('[data-oracle-mode]',{oracleMode:'mutant'});
+ assert.match(page.innerHTML,/id="oracle-self-check" open/);
+ assert.match(page.innerHTML,/ORACLE_FAULT_DETECTED/);
+ assert.match(page.innerHTML,/False accept: 1/);
+ assert.match(page.innerHTML,/FALSE_ACCEPT/);
+ click('[data-injection-case]',{injectionCase:'1'});
+ click('[data-oracle-mode]',{oracleMode:'mutant'});
+ assert.match(page.innerHTML,/False reject: 1/);
+ assert.match(page.innerHTML,/FALSE_REJECT/);
+ assert.doesNotMatch(page.innerHTML,/PRODUCTION_AUTHORIZED/);
 });

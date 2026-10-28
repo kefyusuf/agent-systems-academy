@@ -143,3 +143,64 @@ function summary(mode){
 }
 root.EvidenceInjectionEngine=Object.freeze({CASES,inspect,chooseRepair,summary});
 })(typeof window!=='undefined'?window:globalThis);
+
+
+/* v0.11 - educational oracle mutation self-test. No real agent/tool authorization. */
+(function(root){
+'use strict';
+const F=root.EvidenceInjectionEngine;
+if(!F)throw new Error('EvidenceInjectionEngine must load before OracleReliabilityEngine');
+const faults=Object.freeze({
+ 'paired-leakage':Object.freeze({fault:'The mutant checks a fixture name but ignores group disjointness, so leaked groups are accepted.',missingAssurance:'An independent oracle must inspect group membership and the train/test intersection.'}),
+ 'holdout-tuning':Object.freeze({fault:'The mutant expects the string "true" instead of the boolean true and incorrectly rejects healthy selection evidence.',missingAssurance:'Typed contract checks and a positive, healthy holdout reference example are required.'}),
+ 'disputed-labels':Object.freeze({fault:'The mutant checks only that some fixture exists and fails to examine the adjudication receipt, allowing a missing receipt.',missingAssurance:'A dedicated negative control must remove the gold-label adjudication receipt.'}),
+ 'zero-fn':Object.freeze({fault:'The mutant uses numeric coercion: null >= 0 evaluates true in JavaScript, falsely accepting a missing denominator.',missingAssurance:'A missing-value control and explicit positive-integer denominator validation are required.'}),
+ 'synthetic-shift':Object.freeze({fault:'The mutant rejects any synthetic provenance even when the claim is explicitly bounded to the synthetic fixture.',missingAssurance:'A healthy synthetic example is necessary to detect overly strict rejection, without claiming field validity.'})
+});
+const CASES=Object.freeze(F.CASES.map(c=>Object.freeze({id:c.id,title:c.title,fault:faults[c.id].fault,missingAssurance:faults[c.id].missingAssurance})));
+const MANIFEST=Object.freeze({cases:'evaluation-claim-audit-five-v0.9',fixtures:'evidence-injection-v0.10-two-controls',oracle:'educational-mutations-v0.11',contract:'fixture-validity-only'});
+function verifyManifest(candidate){
+ const stale=Object.keys(MANIFEST).filter(key=>candidate?.[key]!==MANIFEST[key]);
+ return {current:stale.length===0,stale};
+}
+function checkMode(mode){if(mode!=='reference'&&mode!=='mutant')throw new Error('Unknown oracle mode: '+mode);}
+function oracleDecision(id,evidence,referenceExpected){
+ if(id==='paired-leakage'||id==='disputed-labels')return evidence.fixture==='fixed-v0.9-synthetic';
+ if(id==='holdout-tuning')return evidence.selectionIndependent==='true';
+ if(id==='zero-fn')return evidence.denominator>=0;
+ if(id==='synthetic-shift')return evidence.provenance==='field-observed';
+ return Object.is(evidence[id],referenceExpected);
+}
+function evaluate(id,mode){
+ const c=CASES.find(x=>x.id===id);
+ if(!c)throw new Error('Unknown oracle case: '+id);
+ checkMode(mode);
+ const source=F.CASES.find(x=>x.id===id);
+ const controls=Object.freeze(['baseline','injected'].map(fixtureMode=>{
+  const fixture=F.inspect(id,fixtureMode);
+  const expectedValid=fixtureMode==='baseline';
+  const observedValid=mode==='reference'?Object.is(fixture.evidence[source.evidenceKey],source.expected):oracleDecision(id,fixture.evidence,source.expected);
+  const classification=expectedValid?(observedValid?'TRUE_ACCEPT':'FALSE_REJECT'):(observedValid?'FALSE_ACCEPT':'TRUE_REJECT');
+  return Object.freeze({mode:fixtureMode,expectedValid,observedValid,classification,matchesContract:expectedValid===observedValid});
+ }));
+ const falseAccepts=controls.filter(x=>x.classification==='FALSE_ACCEPT').length;
+ const falseRejects=controls.filter(x=>x.classification==='FALSE_REJECT').length;
+ const detected=falseAccepts+falseRejects>0;
+ return Object.freeze({caseId:id,oracleId:mode,controls,falseAccepts,falseRejects,detected,
+  status:detected?'ORACLE_FAULT_DETECTED':'FIXTURE_MATCH_ONLY',
+  fault:c.fault,missingAssurance:c.missingAssurance,
+  limitation:'The two controls are fixed synthetic fixtures, not independent field data or proof of oracle correctness.',
+  productionAuthorized:false,executionAuthorized:false});
+}
+function summary(mode){
+ checkMode(mode);
+ const results=CASES.map(x=>evaluate(x.id,mode));
+ return Object.freeze({
+  cases:results.length,controls:results.reduce((n,r)=>n+r.controls.length,0),
+  detected:results.filter(x=>x.detected).length,
+  falseAccepts:results.reduce((n,r)=>n+r.falseAccepts,0),
+  falseRejects:results.reduce((n,r)=>n+r.falseRejects,0)
+ });
+}
+root.OracleReliabilityEngine=Object.freeze({CASES,MANIFEST,verifyManifest,evaluate,summary});
+})(typeof window!=='undefined'?window:globalThis);
