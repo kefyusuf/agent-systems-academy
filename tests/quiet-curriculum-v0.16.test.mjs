@@ -41,6 +41,13 @@ test('curriculum marks exactly one current module and respects browser progress'
  assert.ok(after.includes('href="#module/'+data.modules[1].id+'" aria-current="step"'));
  assert.match(after,/3\s*\/\s*3 ders|3 ders tamamlandı/);
 });
+test('completing all lessons removes next-module marker without hiding any module',()=>{
+ const allLessons=data.modules.flatMap(m=>m.lessons.map(l=>l.id));
+ const {page}=fixture('#curriculum',allLessons);
+ assert.equal((page.innerHTML.match(/class="curriculum-item"/g)||[]).length,14);
+ assert.doesNotMatch(page.innerHTML,/aria-current="step"|Sıradaki modül/);
+ assert.match(page.innerHTML,/3 \/ 3 ders tamamlandı/);
+});
 test('lesson prioritizes one reading column without deleting educational material',()=>{
  const {page}=fixture('#lesson/08-03');
  for(const id of ['intro','engineering','example','assignment','quiz','deep-dive'])
