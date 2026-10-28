@@ -19,7 +19,7 @@ function fixture(hash){
     querySelectorAll(){return [];},
     addEventListener(){},
   };
-  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
+  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
   vm.runInNewContext(app,context,{filename:'public/app.js'});
   return {page,nodes,handlers};
 }
@@ -195,4 +195,19 @@ test('v0.7 robustness UI can change shift, policy and annotation assumptions',()
  assert.match(page.innerHTML,/14 \/ 18/);
  click('[data-robust-fold]',{robustFold:'boundary'});
  assert.match(page.innerHTML,/approval-handoff/);
+});
+
+test('claim audit shows one choice at a time and never grants execution',()=>{
+ const {page,handlers}=fixture('#eval-robustness');
+ assert.equal(page.innerHTML.match(/data-audit-case=/g)?.length,5);
+ assert.equal(page.innerHTML.match(/data-audit-answer=/g)?.length,3);
+ const click=dataset=>handlers.click({target:{closest(selector){return selector==='[data-audit-case],[data-audit-answer]'?{dataset}:null;}}});
+ click({auditAnswer:'group'});
+ assert.match(page.innerHTML,/Kanıt sınırı korundu/);
+ assert.match(page.innerHTML,/Gerekli kanıt/);
+ click({auditCase:'3'});
+ assert.match(page.innerHTML,/13 riskli sentetik durumda/);
+ click({auditAnswer:'production'});
+ assert.match(page.innerHTML,/Bu karar kanıtı aşar/);
+ assert.equal(page.innerHTML.match(/data-audit-answer=/g)?.length,3);
 });

@@ -46,3 +46,7 @@ Out-of-scope future work would require data from an authorized production enviro
 ## Acceptance evidence
 
 `node --test tests/robustness-core.test.mjs`, `node --test tests/ui-render.test.mjs`, `npm run verify:local`, and `npm run build:pages`. The portable Pages artifact must reproduce the offline route and relative Markdown links.
+
+## v0.9 Claim Audit
+
+See `docs/CLAIM-AUDIT-v0.9.md` and `public/downloads/evaluation-claim-audit-workbook.md`. The five advisory cases reuse this route and never change policy or tool permissions.
