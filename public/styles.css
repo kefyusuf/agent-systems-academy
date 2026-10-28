@@ -350,3 +350,22 @@ body.reading-mode .lesson-block p{font-size:16px}
 .oracle-adjudication summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .eval-chip{min-height:44px;max-width:100%;overflow-wrap:anywhere;white-space:normal;text-align:left}
 @media(max-width:640px){.oracle-self-check,.oracle-independent,.oracle-adjudication{padding-inline:10px}.oracle-self-check .eval-choice-line,.oracle-independent .eval-choice-line,.oracle-adjudication .eval-choice-line{gap:8px}}
+
+/* v0.15 — progressive disclosure, not another dashboard. */
+.home-view .hero{padding:55px 44px 60px;min-height:0;border-bottom:0}
+.home-view .hero-content{max-width:690px}
+.home-view .hero h1{font-size:clamp(32px,3.3vw,46px);line-height:1.22;margin:16px 0 20px}
+.home-view .hero p{max-width:620px}
+.home-next-label{margin:34px 0 5px!important;font-size:11px!important;letter-spacing:.07em;font-weight:650;color:var(--muted)!important}
+.home-next-title{font-size:20px!important;line-height:1.45!important;font-weight:600;color:var(--ink)!important;margin:0 0 18px!important}
+.home-view .hero-foot{display:block;margin-top:30px;letter-spacing:0;font-size:12px;color:var(--muted)}
+.eval-studio .eval-fold{display:block;margin:13px 0;border:1px solid var(--line-soft);border-radius:9px;background:var(--panel);overflow:visible}
+.eval-studio .eval-fold>summary{cursor:pointer;display:list-item;padding:17px 21px;font-size:15px;line-height:1.5;font-weight:600;color:var(--ink);list-style-position:inside}
+.eval-studio .eval-fold>summary::marker{color:var(--muted)}
+.eval-studio .eval-fold>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:7px}
+.eval-studio .eval-fold[open]>summary{border-bottom:1px solid var(--line-soft)}
+.eval-studio .eval-fold>.eval-section{background:transparent;border:0;border-radius:0;box-shadow:none;margin:0;padding:20px;max-width:100%}
+.eval-studio .eval-fold .eval-recovery-plan{background:var(--panel2);border-color:var(--line-soft)}
+.eval-studio .eval-fold .eval-chip{background:var(--panel2);border-color:var(--line);color:var(--ink2)}
+.eval-studio .eval-fold .eval-chip.active{background:#273831;border-color:#7b9d91;color:var(--ink)}
+@media(max-width:640px){.home-view .hero{padding:34px 19px 44px}.home-next-title{font-size:17px!important}.eval-studio .eval-fold>summary{padding:14px 13px}.eval-studio .eval-fold>.eval-section{padding:13px}}
