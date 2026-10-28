@@ -99,3 +99,47 @@ function observationClaim({unsafeReleases,unsafeObservations,independent=false})
 }
 root.EvaluationAuditEngine=Object.freeze({CASES:Object.freeze(CASES),assess,summary,observationClaim});
 })(typeof window!=='undefined'?window:globalThis);
+
+/* v0.10: one-field evidence injection. Educational replay, no runtime permissions. */
+(function(root){
+'use strict';
+const rows=[
+ ['paired-leakage','Grouped split','groupDisjoint',true,false,'Train ve test aynı senaryoyu paylaşır; bağımsızlık kanıtı düşer.','Senaryo bazlı ayrım ve sıfır grup kesişimini gösteren yeniden hesaplanmış split manifesti.','group-split','Senaryo bazında yeniden ayır ve doğrula','shuffle','Satırları rastgele karıştır','weight','Örnek ağırlığını artır'],
+ ['holdout-tuning','Untouched holdout','selectionIndependent',true,false,'Seçimde kullanılmış test artık bağımsız final holdout değildir.','Dondurulmuş policy, seçim geçmişi ve yeni untouched holdout değerlendirme makbuzu.','fresh-holdout','Yeni bağımsız holdout ile yeniden değerlendir','reuse','Aynı skorları dış iddiada kullan','reweight','Ağırlıkları değiştir'],
+ ['disputed-labels','Label adjudication','adjudicationReceipt','adjudicated-v1',null,'Bağımsız label adjudication makbuzu kayıp; gold label kaynağı belirsiz.','Kör adjudication, kaynak makbuzu, sürümlü etiketler ve açık paydalar.','adjudicate','Bağımsız adjudication yap ve yeniden değerlendir','omit','Uyuşmazlıkları gizle','flip','İtirazları doğru kabul et'],
+ ['zero-fn','Risk denominator','denominator',13,null,'FN=0 ifadesi artık doğrulanmış bir risk paydasına bağlı değil.','Kaynağa bağlı riskli örnek sayısı, bağımlılık bilgisi ve fixture manifesti.','restore-denominator','Otoritatif paydayı doğrula ve yeniden ölç','production','Sıfır üretim riski ilan et','independent','Eşleşmiş satırları bağımsız say'],
+ ['synthetic-shift','Weight provenance','provenance','synthetic','observed','Sentetik ağırlık gözlemsel saha insidansı gibi yeniden etiketlendi.','Köken manifesti, varsayımsal ağırlık tanımı ve gerçek saha gözlemlerinden ayrım.','provenance','Kökeni düzelt ve yeniden değerlendir','incidence','Gerçek saha oranı olarak yayımla','sample','Ağırlıklı kütleyi yeni n say']
+];
+const CASES=Object.freeze(rows.map(r=>Object.freeze({
+ id:r[0],title:r[1],evidenceKey:r[2],expected:r[3],corrupted:r[4],failure:r[5],requiredEvidence:r[6],
+ correctId:r[7],
+ options:Object.freeze([{id:r[7],label:r[8]},{id:r[9],label:r[10]},{id:r[11],label:r[12]}].map(o=>Object.freeze(o))),
+ baselineEvidence:Object.freeze({fixture:'fixed-v0.9-synthetic', [r[2]]:r[3]})
+})));
+const map=new Map(CASES.map(c=>[c.id,c]));
+function find(id){const c=map.get(id);if(!c)throw new Error('Unknown injection case: '+id);return c;}
+function inspect(id,mode){
+ const c=find(id);
+ if(mode!=='baseline'&&mode!=='injected')throw new Error('Unknown injection mode: '+mode);
+ const evidence=Object.freeze({...c.baselineEvidence,[c.evidenceKey]:mode==='baseline'?c.expected:c.corrupted});
+ const passed=Object.is(evidence[c.evidenceKey],c.expected);
+ return Object.freeze({id,mode,evidence,evidenceValid:passed,
+  check:Object.freeze({name:c.evidenceKey,expected:c.expected,actual:evidence[c.evidenceKey],passed}),
+  status:passed?'FIXTURE_ONLY':'CLAIM_BLOCKED',failure:c.failure,requiredEvidence:c.requiredEvidence,
+  productionAuthorized:false,executionAuthorized:false});
+}
+function chooseRepair(id,actionId){
+ const c=find(id),option=c.options.find(o=>o.id===actionId);
+ if(!option)throw new Error('Unknown repair action: '+actionId);
+ const appropriate=actionId===c.correctId;
+ return Object.freeze({id,actionId,appropriate,status:appropriate?'REVERIFY_REQUIRED':'CLAIM_BLOCKED',
+  message:appropriate?'Doğru kurtarma önerisi. Bağımsız kanıtı yeniden toplayıp kontrolleri tekrar çalıştır; otomatik PASS yok.':'Bu işlem eksik veya bozuk kanıtı onarmıyor. İddia engellenmeye devam eder.',
+  requiredEvidence:c.requiredEvidence,productionAuthorized:false,executionAuthorized:false});
+}
+function summary(mode){
+ if(mode!=='baseline'&&mode!=='injected')throw new Error('Unknown injection mode: '+mode);
+ const results=CASES.map(c=>inspect(c.id,mode));
+ return Object.freeze({total:results.length,blocked:results.filter(x=>x.status==='CLAIM_BLOCKED').length,fixtureOnly:results.filter(x=>x.status==='FIXTURE_ONLY').length});
+}
+root.EvidenceInjectionEngine=Object.freeze({CASES,inspect,chooseRepair,summary});
+})(typeof window!=='undefined'?window:globalThis);
