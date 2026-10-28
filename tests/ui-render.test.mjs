@@ -316,3 +316,34 @@ test('v0.13 dispute and stale source choices fail closed without manufactured ev
  assert.match(page.innerHTML,/REVERIFY_REQUIRED/);
  assert.doesNotMatch(page.innerHTML,/PRODUCTION_AUTHORIZED/);
 });
+
+test('v0.15 quiet homepage has one next lesson instead of six cards and a lab promo',()=>{
+ const {page}=fixture('#home');
+ assert.match(page.innerHTML,/İlk derse başla|Kaldığın yerden devam et/);
+ assert.doesNotMatch(page.innerHTML,/class="module-grid"/);
+ assert.doesNotMatch(page.innerHTML,/class="home-labs"/);
+ assert.match(page.innerHTML,/href="#curriculum"/);
+});
+test('v0.15 evaluation contains all six exercises but exposes only the first by default',()=>{
+ const {page}=fixture('#eval-robustness');
+ assert.equal(page.innerHTML.match(/class="eval-fold"/g)?.length,6);
+ assert.equal(page.innerHTML.match(/data-eval-fold="/g)?.length,6);
+ assert.equal(page.innerHTML.match(/class="eval-fold"[^>]* open/g)?.length,1);
+ for(const id of ['distribution','labels','holdout','freshness','claims','injection'])
+  assert.match(page.innerHTML,new RegExp('data-eval-fold="'+id+'"'));
+ assert.match(page.innerHTML,/data-robust-profile/);
+ assert.match(page.innerHTML,/data-audit-case/);
+ assert.match(page.innerHTML,/data-injection-case/);
+});
+test('v0.15 disclosure open state persists through interactive redraw and can close again',()=>{
+ const {page,handlers}=fixture('#eval-robustness');
+ assert.equal(typeof handlers.toggle,'function');
+ handlers.toggle({target:{dataset:{evalFold:'labels'},open:true},currentTarget:page});
+ const chip={dataset:{robustLabels:'disputed-excluded'}};
+ const click=()=>handlers.click({target:{closest(s){return s.split(',').includes('[data-robust-labels]')?chip:null;}}});
+ click();
+ assert.match(page.innerHTML,/data-eval-fold="labels" open/);
+ handlers.toggle({target:{dataset:{evalFold:'distribution'},open:false},currentTarget:page});
+ click();
+ assert.doesNotMatch(page.innerHTML,/data-eval-fold="distribution" open/);
+});
