@@ -21,6 +21,7 @@ The learning UI and course material are in Turkish. Code, architectural document
 - v0.13 oracle disagreement and evidence adjudication: fail-closed dispute and stale-source review of the same zero-FN fixture, with explicit source-review requests that never fabricate corrected evidence or permission.
 - v0.14 accessibility maintenance: keyboard skip link, focused main navigation, persistent status announcements, visible nested disclosure focus, restoration after dynamic option updates, and calmer 44px mobile controls; no curriculum or evaluation model changes.
 - v0.15 quiet learning layout: a single next-lesson action on the homepage; six advanced evaluation topics folded by default except the first, with native keyboard summary controls, preserved open states, and no content removal.
+- v0.16 quiet curriculum and reading: fourteen keyboard-accessible compact module rows with one next-unfinished step; lesson content in one readable column without duplicate side navigation or decorative byline. All tasks, source links, evaluation controls, and progress remain unchanged.
 - Local progress tracking in browser `localStorage`
 - Static Astro output, no accounts, backend, telemetry, LLM provider, paid API, or MCP access needed
 
