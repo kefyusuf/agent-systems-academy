@@ -19,7 +19,7 @@ function fixture(hash){
     querySelectorAll(){return [];},
     addEventListener(){},
   };
-  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,EvidenceInjectionEngine:globalThis.EvidenceInjectionEngine,OracleReliabilityEngine:globalThis.OracleReliabilityEngine,IndependentOracleEngine:globalThis.IndependentOracleEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
+  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,EvidenceInjectionEngine:globalThis.EvidenceInjectionEngine,OracleReliabilityEngine:globalThis.OracleReliabilityEngine,IndependentOracleEngine:globalThis.IndependentOracleEngine,OracleAdjudicationEngine:globalThis.OracleAdjudicationEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
   vm.runInNewContext(app,context,{filename:'public/app.js'});
   return {page,nodes,handlers};
 }
@@ -285,5 +285,34 @@ test('v0.12 witness catches common-mode duplicate and stale revision without new
  assert.match(page.innerHTML,/CLAIM_BLOCKED/);
  click('[data-witness-mode]',{witnessMode:'healthy'});
  assert.match(page.innerHTML,/FIXTURE_ONLY/);
+ assert.doesNotMatch(page.innerHTML,/PRODUCTION_AUTHORIZED/);
+});
+
+test('v0.13 adjudication appears only in zero-fn witness and is initially collapsed',()=>{
+ const {page,handlers}=fixture('#eval-robustness');
+ assert.doesNotMatch(page.innerHTML,/id="oracle-adjudication"/);
+ const click=(selector,dataset)=>handlers.click({target:{closest(s){return s.split(',').includes(selector)?{dataset}:null;}}});
+ click('[data-injection-case]',{injectionCase:'3'});
+ assert.match(page.innerHTML,/<details class="oracle-adjudication" id="oracle-adjudication" >/);
+ assert.equal(page.innerHTML.match(/data-adjudication-action=/g)?.length,3);
+ assert.match(page.innerHTML,/Sayı uyuşması: evet/);
+ assert.match(page.innerHTML,/FIXTURE_ONLY/);
+});
+test('v0.13 dispute and stale source choices fail closed without manufactured evidence',()=>{
+ const {page,handlers}=fixture('#eval-robustness');
+ const click=(selector,dataset)=>handlers.click({target:{closest(s){return s.split(',').includes(selector)?{dataset}:null;}}});
+ click('[data-injection-case]',{injectionCase:'3'});
+ click('[data-witness-mode]',{witnessMode:'duplicate-id'});
+ assert.match(page.innerHTML,/DISPUTED_HOLD/);
+ click('[data-adjudication-action]',{adjudicationAction:'trust-claim'});
+ assert.match(page.innerHTML,/id="oracle-adjudication" open/);
+ assert.match(page.innerHTML,/CLAIM_BLOCKED/);
+ click('[data-adjudication-action]',{adjudicationAction:'request-adjudication'});
+ assert.match(page.innerHTML,/ADJUDICATION_REQUIRED/);
+ click('[data-witness-mode]',{witnessMode:'stale-revision'});
+ assert.match(page.innerHTML,/STALE_SOURCE_HOLD/);
+ assert.doesNotMatch(page.innerHTML,/ADJUDICATION_REQUIRED/);
+ click('[data-adjudication-action]',{adjudicationAction:'refresh-source'});
+ assert.match(page.innerHTML,/REVERIFY_REQUIRED/);
  assert.doesNotMatch(page.innerHTML,/PRODUCTION_AUTHORIZED/);
 });

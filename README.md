@@ -18,6 +18,7 @@ The learning UI and course material are in Turkish. Code, architectural document
 - v0.10 evaluation failure injection: one corrupted evidence field per existing case, explicit claim-blocking and re-verification-only recovery decisions
 - v0.11 evaluation oracle reliability: optional, collapsed self-test comparing reference and five deliberately faulty validation predicates against fixed healthy/corrupted evidence controls; distinguishes false accept from false reject, without new modules or production claims
 - v0.12 independent oracle witness: a single zero-FN common-mode teaching case compares two count-based validators with a separately authored synthetic risk registry, detecting duplicate identifiers and stale source revisions; no production independent-source claim.
+- v0.13 oracle disagreement and evidence adjudication: fail-closed dispute and stale-source review of the same zero-FN fixture, with explicit source-review requests that never fabricate corrected evidence or permission.
 - Local progress tracking in browser `localStorage`
 - Static Astro output, no accounts, backend, telemetry, LLM provider, paid API, or MCP access needed
 

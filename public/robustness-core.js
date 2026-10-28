@@ -262,3 +262,85 @@ function evaluate(mode){
 }
 root.IndependentOracleEngine=Object.freeze({CASE_ID,MODES,MANIFEST,verifyManifest,evaluate});
 })(typeof window!=='undefined'?window:globalThis);
+
+
+/* v0.13: synthetic oracle disagreement and evidence adjudication (advisory only).
+ * Never assume these locally curated fixtures are independent production sources.
+ */
+(function(root){
+'use strict';
+const I=root.IndependentOracleEngine;
+if(!I)throw new Error('IndependentOracleEngine must load before OracleAdjudicationEngine');
+const CASE_ID=I.CASE_ID;
+const MODES=I.MODES;
+const MANIFEST=Object.freeze({
+ case:'zero-fn-claim-v0.10',
+ witness:'synthetic-risk-registry-v1-r42',
+ policy:'hold-on-disagreement-v0.13',
+ proof:'adjudication-not-executed'
+});
+const DECISIONS=Object.freeze({
+ healthy:Object.freeze([
+  Object.freeze({id:'record-fixture',label:'Yalnız fixture sonucunu kaydet'}),
+  Object.freeze({id:'publish-guarantee',label:'Üretim güvencesi yayımla'}),
+  Object.freeze({id:'skip-controls',label:'Kontrolleri atla'})
+ ]),
+ 'duplicate-id':Object.freeze([
+  Object.freeze({id:'request-adjudication',label:'Kaynak ve kimlik incelemesi iste'}),
+  Object.freeze({id:'trust-claim',label:'Bildirilen 13 sayısını doğru kabul et'}),
+  Object.freeze({id:'trust-witness',label:'12 sayısını kanıtsız doğru ilan et'})
+ ]),
+ 'stale-revision':Object.freeze([
+  Object.freeze({id:'refresh-source',label:'Güncel kaynağı yeniden doğrula'}),
+  Object.freeze({id:'use-r41',label:'Eski r41 kaydını kabul et'}),
+  Object.freeze({id:'assume-count',label:'Sayılar aynıysa devam et'})
+ ])
+});
+const PREFERRED=Object.freeze({
+ healthy:'record-fixture',
+ 'duplicate-id':'request-adjudication',
+ 'stale-revision':'refresh-source'
+});
+function assertMode(mode){
+ if(!MODES.some(m=>m.id===mode))throw new Error('Unknown disagreement mode: '+mode);
+}
+function verifyManifest(candidate){
+ const stale=Object.keys(MANIFEST).filter(k=>candidate?.[k]!==MANIFEST[k]);
+ return {current:stale.length===0,stale};
+}
+function review(mode){
+ assertMode(mode);
+ const evidence=I.evaluate(mode), w=evidence.witness;
+ const countAgreement=evidence.claimedDenominator===w.uniqueRecords;
+ const revisionComparable=w.revisionFresh&&w.provenanceMatches;
+ const status=!revisionComparable?'STALE_SOURCE_HOLD':!countAgreement||!w.uniqueIds?'DISPUTED_HOLD':'FIXTURE_ONLY';
+ return Object.freeze({
+  mode,caseId:CASE_ID,
+  claim:Object.freeze({denominator:evidence.claimedDenominator,revision:w.expectedRevision,source:'zero-fn-synthetic-claim'}),
+  witness:Object.freeze({uniqueRecords:w.uniqueRecords,totalRecords:w.totalRecords,revision:w.revision,source:w.source}),
+  countAgreement,revisionComparable,status,
+  requiredEvidence:'Independently review provenance, unique risk IDs, ownership, revision-bound source receipts, and adjudication before any external claim.',
+  limitation:'Both sources here are authored synthetic educational fixtures in the same repo; no real independent adjudicator, source authentication or production evidence.',
+  productionAuthorized:false,executionAuthorized:false,doneAuthorized:false
+ });
+}
+function options(mode){assertMode(mode);return DECISIONS[mode];}
+function choose(mode,actionId){
+ assertMode(mode);
+ const option=DECISIONS[mode].find(x=>x.id===actionId);
+ if(!option)throw new Error('Unknown adjudication action: '+actionId);
+ const appropriate=actionId===PREFERRED[mode];
+ const status=!appropriate?'CLAIM_BLOCKED':mode==='duplicate-id'?'ADJUDICATION_REQUIRED':mode==='stale-revision'?'REVERIFY_REQUIRED':'FIXTURE_ONLY';
+ const outcome=review(mode);
+ return Object.freeze({
+  mode,actionId,appropriate,status,proofComplete:false,evidenceCollected:false,revisionValidated:false,resolved:false,
+  explanation:!appropriate?'This shortcut bypasses the conflicting source, version or evidence authority and cannot establish truth.':
+    mode==='duplicate-id'?'A disagreement review is requested, but no source adjudication or corrected evidence has been received.':
+    mode==='stale-revision'?'A fresh source and revision-bound receipts must still be collected and independently verified.':
+    'Only the bounded synthetic fixture observation may be recorded. No external assurance follows.',
+  requiredEvidence:outcome.requiredEvidence,
+  productionAuthorized:false,executionAuthorized:false,doneAuthorized:false
+ });
+}
+root.OracleAdjudicationEngine=Object.freeze({CASE_ID,MODES,MANIFEST,verifyManifest,review,options,choose});
+})(typeof window!=='undefined'?window:globalThis);
