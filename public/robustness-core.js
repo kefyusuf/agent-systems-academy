@@ -204,3 +204,61 @@ function summary(mode){
 }
 root.OracleReliabilityEngine=Object.freeze({CASES,MANIFEST,verifyManifest,evaluate,summary});
 })(typeof window!=='undefined'?window:globalThis);
+
+
+/* v0.12: fixed synthetic witness for common-mode oracle blind spots.
+ * This is separately curated educational data, NOT an independent production source.
+ */
+(function(root){
+'use strict';
+const F=root.EvidenceInjectionEngine;
+if(!F)throw new Error('EvidenceInjectionEngine must load before IndependentOracleEngine');
+const CASE_ID='zero-fn', EXPECTED_REVISION='r42';
+const MODES=Object.freeze([
+ Object.freeze({id:'healthy',title:'Sağlam kayıt',description:'13 benzersiz risk kimliği ve güncel r42 revizyonu'}),
+ Object.freeze({id:'duplicate-id',title:'Yinelenen kimlik',description:'13 kayıt satırı fakat yalnız 12 benzersiz kimlik'}),
+ Object.freeze({id:'stale-revision',title:'Eski revizyon',description:'13 benzersiz kimlik ama r41 kaynak revizyonu'})
+]);
+/* The registry is deliberately written separately from the claimed denominator.
+ * Do not derive witness IDs or labels from the field being checked.
+ */
+const REGISTRY=Object.freeze({
+ healthy:Object.freeze({source:'synthetic-risk-registry-v1',revision:'r42',ids:Object.freeze(['risk-01','risk-02','risk-03','risk-04','risk-05','risk-06','risk-07','risk-08','risk-09','risk-10','risk-11','risk-12','risk-13'])}),
+ 'duplicate-id':Object.freeze({source:'synthetic-risk-registry-v1',revision:'r42',ids:Object.freeze(['risk-01','risk-02','risk-03','risk-04','risk-05','risk-06','risk-07','risk-08','risk-09','risk-10','risk-11','risk-12','risk-12'])}),
+ 'stale-revision':Object.freeze({source:'synthetic-risk-registry-v1',revision:'r41',ids:Object.freeze(['risk-01','risk-02','risk-03','risk-04','risk-05','risk-06','risk-07','risk-08','risk-09','risk-10','risk-11','risk-12','risk-13'])})
+});
+const MANIFEST=Object.freeze({fixture:'zero-fn-v0.10-synthetic',registry:'synthetic-risk-registry-v1',revision:EXPECTED_REVISION,contract:'identity-cardinality-revision-v0.12'});
+function verifyManifest(candidate){
+ const stale=Object.keys(MANIFEST).filter(key=>candidate?.[key]!==MANIFEST[key]);
+ return {current:stale.length===0,stale};
+}
+function evaluate(mode){
+ if(!MODES.some(x=>x.id===mode))throw new Error('Unknown witness mode: '+mode);
+ const claim=F.inspect(CASE_ID,'baseline').evidence;
+ const claimedDenominator=claim.denominator;
+ /* Two different predicates share the same assumption: the claimed count is enough.
+  * Agreement is not an independent evidence check.
+  */
+ const naiveChecks=Object.freeze([
+  Object.freeze({name:'expected-count',passed:claimedDenominator===13}),
+  Object.freeze({name:'positive-count-and-fixture',passed:Number.isInteger(claimedDenominator)&&claimedDenominator>0&&claim.fixture==='fixed-v0.9-synthetic'})
+ ]);
+ const source=REGISTRY[mode],totalRecords=source.ids.length,uniqueRecords=new Set(source.ids).size;
+ const uniqueIds=totalRecords===uniqueRecords;
+ const countMatches=uniqueRecords===claimedDenominator;
+ const revisionFresh=source.revision===EXPECTED_REVISION;
+ const provenanceMatches=source.source===MANIFEST.registry;
+ const valid=uniqueIds&&countMatches&&revisionFresh&&provenanceMatches;
+ const bothAccept=naiveChecks.every(x=>x.passed);
+ const commonModeDetected=bothAccept&&!valid;
+ return Object.freeze({
+  mode,claimedDenominator,naiveChecks,bothAccept,
+  witness:Object.freeze({source:source.source,revision:source.revision,expectedRevision:EXPECTED_REVISION,totalRecords,uniqueRecords,uniqueIds,countMatches,revisionFresh,provenanceMatches,valid}),
+  status:valid?'FIXTURE_ONLY':'CLAIM_BLOCKED',
+  commonModeDetected,requiredEvidence:'Otoritatif ve sürüme bağlı kaynak kayıtları, benzersiz risk kimlikleri, doğrulanmış payda ve yeni değerlendirme makbuzu.',
+  limitation:'The registry and claim are separately authored synthetic teaching fixtures in the same codebase; no independent production evidence, trusted external witness or statistical assurance is provided.',
+  executionAuthorized:false,productionAuthorized:false,doneAuthorized:false
+ });
+}
+root.IndependentOracleEngine=Object.freeze({CASE_ID,MODES,MANIFEST,verifyManifest,evaluate});
+})(typeof window!=='undefined'?window:globalThis);
