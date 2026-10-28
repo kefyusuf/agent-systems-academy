@@ -16,6 +16,7 @@ The learning UI and course material are in Turkish. Code, architectural document
 - v0.7 robustness view: four hypothetical risk-distribution profiles, disputed labels, scenario-grouped holdout, evaluation manifest freshness
 - v0.9 claim audit: five advisory cases on leakage, held-out evaluation, disputed labels, zero observed FN and synthetic weights
 - v0.10 evaluation failure injection: one corrupted evidence field per existing case, explicit claim-blocking and re-verification-only recovery decisions
+- v0.11 evaluation oracle reliability: optional, collapsed self-test comparing reference and five deliberately faulty validation predicates against fixed healthy/corrupted evidence controls; distinguishes false accept from false reject, without new modules or production claims
 - Local progress tracking in browser `localStorage`
 - Static Astro output, no accounts, backend, telemetry, LLM provider, paid API, or MCP access needed
 

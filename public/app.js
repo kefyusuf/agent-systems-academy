@@ -9,8 +9,9 @@ const R = window.ReliabilityEngine;
 const Q = window.RobustnessEngine;
 const A = window.EvaluationAuditEngine;
 const F = window.EvidenceInjectionEngine;
+const O = window.OracleReliabilityEngine;
 const page = document.querySelector('#page');
-if (!D || !E || !W || !C || !H || !R || !Q || !A || !F || !page) return;
+if (!D || !E || !W || !C || !H || !R || !Q || !A || !F || !O || !page) return;
 const courses = D.modules.flatMap(m => m.lessons.map(l => ({...l,module:m})));
 const STORAGE = 'agent-academy-progress-v1';
 function loadProgress(){try{const s=JSON.parse(localStorage.getItem(STORAGE)||'{}');return {completed:Array.isArray(s.completed)?s.completed:[],passed:Array.isArray(s.passed)?s.passed:[]};}catch{return {completed:[],passed:[]};}}
@@ -40,6 +41,8 @@ const auditAnswers={};
 let injectionIndex=0;
 let injectionMode='baseline';
 let injectionChoice=null;
+let oracleMode='reference';
+let oracleOpen=false;
 function notify(msg){const t=document.querySelector('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>t.classList.remove('show'),3200);}
 function done(m){return m.lessons.filter(l=>progress.completed.includes(l.id)).length;}
 function status(){const n=progress.completed.length;const total=courses.length;document.querySelector('#sidebar-done').textContent=`${n} / ${total}`;document.querySelector('#sidebar-bar').style.width=`${n/total*100}%`;document.querySelector('#course-count').textContent=D.modules.length;}
@@ -226,6 +229,21 @@ function renderClaimAudit(){
  ${result?`<div role="status"><p><strong>${result.correct?'Kanıt sınırı korundu':'Bu karar kanıtı aşar'}</strong></p><p>${esc(result.explanation)}</p><p><strong>Gerekli kanıt:</strong> ${esc(result.evidence)}</p><p><strong>İddia sınırı:</strong> ${esc(result.limit)}</p></div>`:'<p class="eval-caveat">Teknik gerekçeyi görmek için bir karar seç.</p>'}</div>
  <p class="eval-caveat">${progress.answered}/${progress.total} vaka yanıtlandı · ${progress.correct} uygun karar. Bu skor bir güvenlik sertifikası değildir. <a class="plain-link" href="${downloadUrl('evaluation-claim-audit-workbook.md')}" download>Teknik çalışma kitabı</a></p></section>`;
 }
+function renderOraclePanel(){
+ const c=F.CASES[injectionIndex];
+ const review=O.evaluate(c.id,oracleMode), controls=review.controls;
+ const choice=(id,label)=>`<button type="button" class="eval-chip ${oracleMode===id?'active':''}" data-oracle-mode="${id}" aria-pressed="${oracleMode===id}">${label}</button>`;
+ return `<details class="eval-recovery-plan oracle-self-check" id="oracle-self-check" ${oracleOpen?'open':''}>
+ <summary>Oracle öz testi · v0.11 (isteğe bağlı)</summary>
+ <p class="eval-caveat">Oracle'ın kendisini iki sabit kontrolle dene. <strong>False accept</strong>: bozuk kanıtı geçerli saymak. <strong>False reject</strong>: sağlam kanıtı geçersiz saymak.</p>
+ <div class="eval-choice-line" role="group" aria-label="Oracle variant">${choice('reference','Referans kontrol')}${choice('mutant','Hatalı kontrol')}</div>
+ <p role="status"><strong>${esc(review.status)}</strong> · False accept: ${review.falseAccepts} · False reject: ${review.falseRejects}</p>
+ <p class="eval-caveat">Sağlam örnek: ${esc(controls[0].classification)} · Bozuk örnek: ${esc(controls[1].classification)}</p>
+ ${review.detected?`<p><strong>Oracle hatası:</strong> ${esc(review.fault)}</p><p><strong>Eksik güvence:</strong> ${esc(review.missingAssurance)}</p>`:''}
+ <p class="eval-caveat">Bu iki sentetik kontrol, oracle'ın gerçek görevlerde doğru çalıştığını kanıtlamaz. <a class="plain-link" href="${downloadUrl('evaluation-oracle-reliability-workbook.md')}" download>Oracle Workbook</a></p>
+ </details>`;
+}
+
 function renderFailureInjection(){
  const c=F.CASES[injectionIndex],r=F.inspect(c.id,injectionMode);
  const chosen=injectionChoice?F.chooseRepair(c.id,injectionChoice):null;
@@ -244,7 +262,7 @@ function renderFailureInjection(){
  <div class="eval-choice-line" role="group" aria-label="Recovery decision">${c.options.map(o=>`<button type="button" class="eval-chip ${injectionChoice===o.id?'active':''}" data-injection-choice="${esc(o.id)}" aria-pressed="${injectionChoice===o.id}">${esc(o.label)}</button>`).join('')}</div>
  ${chosen?`<p role="status"><strong>${esc(chosen.status)}</strong> · ${esc(chosen.message)}</p>`:''}`:''}
  <p class="eval-caveat"><strong>Gerekli kanıt:</strong> ${esc(r.requiredEvidence)}</p></div>
- <p class="eval-caveat">Read-only simülasyon: gerçek araç çağrısı, izin, üretim garantisi veya otomatik DONE yok. <a class="plain-link" href="${downloadUrl('evaluation-failure-injection-workbook.md')}" download>Çalışma kitabı</a></p></section>`;
+ <p class="eval-caveat">Read-only simülasyon: gerçek araç çağrısı, izin, üretim garantisi veya otomatik DONE yok. <a class="plain-link" href="${downloadUrl('evaluation-failure-injection-workbook.md')}" download>Çalışma kitabı</a></p>${renderOraclePanel()}</section>`;
 }
 function renderEvaluationRobustness(){
  crumb('Evaluation robustness');
@@ -272,9 +290,15 @@ function render(){let raw=decodeURIComponent((location.hash||'#home').slice(1));
 switch(route){case 'home':html=renderHome();break;case 'curriculum':html=renderCurriculum();break;case 'module':html=renderModule(id);break;case 'lesson':html=renderLesson(id);break;case 'labs':html=renderLabs();break;case 'lab':html=renderLab(id);break;case 'architecture':html=renderArchitecture();break;case 'workshop':html=renderWorkshop();break;case 'context-studio':html=renderContextStudio();break;case 'compaction-studio':html=renderCompactionStudio();break;case 'reliability-eval':html=renderReliabilityEvaluation();break;case 'eval-robustness':html=renderEvaluationRobustness();break;case 'glossary':html=renderGlossary();break;case 'resources':html=renderResources();break;default:html=render404();}
 page.innerHTML=html;document.body?.classList?.toggle('is-lesson',route==='lesson');document.body?.classList?.toggle('reading-mode',route==='lesson'&&readingMode);const focus=document.querySelector('#focus-toggle');if(focus){focus.setAttribute('aria-pressed',String(route==='lesson'&&readingMode));focus.setAttribute('aria-label',readingMode?'Odak modunu kapat':'Odak modunu aç');focus.textContent=readingMode?'Normal görünüm':'Odak modu';}const expanded=document.querySelector('#advanced-nav');if(expanded&&['workshop','context-studio','compaction-studio','reliability-eval','eval-robustness'].includes(route))expanded.open=true;const aux=document.querySelector('#aux-nav');if(aux&&['architecture','glossary','resources'].includes(route))aux.open=true;status();if(route==='lab'){if(id==='cache')renderCacheOutput();if(id==='policy')renderPolicyOutput();if(id==='router')renderRouter();if(id==='context')renderContextOutput();}window.scrollTo({top:0,behavior:'instant'});}
 function onClick(e){
+const oracle=e.target.closest('[data-oracle-mode]');
+if(oracle){
+ const mode=oracle.dataset.oracleMode;
+ if(mode==='reference'||mode==='mutant'){oracleMode=mode;oracleOpen=true;page.innerHTML=renderEvaluationRobustness();}
+ return;
+}
 const injected=e.target.closest('[data-injection-case],[data-injection-mode],[data-injection-choice]');
 if(injected){
- if(injected.dataset.injectionCase!==undefined){const index=Number(injected.dataset.injectionCase);if(Number.isInteger(index)&&index>=0&&index<F.CASES.length){injectionIndex=index;injectionMode='baseline';injectionChoice=null;}}
+ if(injected.dataset.injectionCase!==undefined){const index=Number(injected.dataset.injectionCase);if(Number.isInteger(index)&&index>=0&&index<F.CASES.length){injectionIndex=index;injectionMode='baseline';injectionChoice=null;oracleMode='reference';oracleOpen=false;}}
  if(injected.dataset.injectionMode!==undefined&&['baseline','injected'].includes(injected.dataset.injectionMode)){injectionMode=injected.dataset.injectionMode;injectionChoice=null;}
  if(injected.dataset.injectionChoice!==undefined&&injectionMode==='injected'){F.chooseRepair(F.CASES[injectionIndex].id,injected.dataset.injectionChoice);injectionChoice=injected.dataset.injectionChoice;}
  page.innerHTML=renderEvaluationRobustness();return;
