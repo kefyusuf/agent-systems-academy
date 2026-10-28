@@ -11,8 +11,9 @@ const A = window.EvaluationAuditEngine;
 const F = window.EvidenceInjectionEngine;
 const O = window.OracleReliabilityEngine;
 const I = window.IndependentOracleEngine;
+const J = window.OracleAdjudicationEngine;
 const page = document.querySelector('#page');
-if (!D || !E || !W || !C || !H || !R || !Q || !A || !F || !O || !I || !page) return;
+if (!D || !E || !W || !C || !H || !R || !Q || !A || !F || !O || !I || !J || !page) return;
 const courses = D.modules.flatMap(m => m.lessons.map(l => ({...l,module:m})));
 const STORAGE = 'agent-academy-progress-v1';
 function loadProgress(){try{const s=JSON.parse(localStorage.getItem(STORAGE)||'{}');return {completed:Array.isArray(s.completed)?s.completed:[],passed:Array.isArray(s.passed)?s.passed:[]};}catch{return {completed:[],passed:[]};}}
@@ -46,6 +47,8 @@ let oracleMode='reference';
 let oracleOpen=false;
 let witnessMode='healthy';
 let witnessOpen=false;
+let adjudicationOpen=false;
+let adjudicationAction=null;
 function notify(msg){const t=document.querySelector('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>t.classList.remove('show'),3200);}
 function done(m){return m.lessons.filter(l=>progress.completed.includes(l.id)).length;}
 function status(){const n=progress.completed.length;const total=courses.length;document.querySelector('#sidebar-done').textContent=`${n} / ${total}`;document.querySelector('#sidebar-bar').style.width=`${n/total*100}%`;document.querySelector('#course-count').textContent=D.modules.length;}
@@ -232,6 +235,21 @@ function renderClaimAudit(){
  ${result?`<div role="status"><p><strong>${result.correct?'Kanıt sınırı korundu':'Bu karar kanıtı aşar'}</strong></p><p>${esc(result.explanation)}</p><p><strong>Gerekli kanıt:</strong> ${esc(result.evidence)}</p><p><strong>İddia sınırı:</strong> ${esc(result.limit)}</p></div>`:'<p class="eval-caveat">Teknik gerekçeyi görmek için bir karar seç.</p>'}</div>
  <p class="eval-caveat">${progress.answered}/${progress.total} vaka yanıtlandı · ${progress.correct} uygun karar. Bu skor bir güvenlik sertifikası değildir. <a class="plain-link" href="${downloadUrl('evaluation-claim-audit-workbook.md')}" download>Teknik çalışma kitabı</a></p></section>`;
 }
+function renderAdjudication(){
+ const review=J.review(witnessMode),outcome=adjudicationAction?J.choose(witnessMode,adjudicationAction):null;
+ return `<details class="oracle-adjudication" id="oracle-adjudication" ${adjudicationOpen?'open':''}>
+ <summary>Kaynak çelişkisi ve adjudication · v0.13</summary>
+ <p class="eval-caveat">Bildirilen payda: ${review.claim.denominator} · Kaynakta benzersiz kayıt: ${review.witness.uniqueRecords} · Revizyon: ${esc(review.witness.revision)}. İki doğrulama sonucunun birbirine uyması veya uymaması tek başına hakemlik değildir.</p>
+ <p role="status"><strong>${esc(review.status)}</strong> · Sayı uyuşması: ${review.countAgreement?'evet':'hayır'} · Revizyon karşılaştırılabilir: ${review.revisionComparable?'evet':'hayır'}</p>
+ <p><strong>Nasıl karar verirsin?</strong></p>
+ <div class="eval-choice-line" role="group" aria-label="Adjudication action">
+ ${J.options(witnessMode).map(o=>`<button type="button" class="eval-chip ${adjudicationAction===o.id?'active':''}" data-adjudication-action="${esc(o.id)}" aria-pressed="${adjudicationAction===o.id}">${esc(o.label)}</button>`).join('')}</div>
+ ${outcome?`<p role="status"><strong>${esc(outcome.status)}</strong> · ${esc(outcome.explanation)}</p>`:''}
+ <p class="eval-caveat"><strong>Gerekli kanıt:</strong> ${esc(review.requiredEvidence)}</p>
+ <p class="eval-caveat">Tüm kayıtlar sentetiktir. Hiçbir işlem yeni kanıt, insan onayı, çalıştırma izni veya üretim garantisi oluşturmaz. <a class="plain-link" href="${downloadUrl('oracle-disagreement-adjudication-workbook.md')}" download>Adjudication çalışma kitabı</a></p>
+ </details>`;
+}
+
 function renderIndependentWitness(){
  const review=I.evaluate(witnessMode);
  const w=review.witness;
@@ -244,6 +262,7 @@ function renderIndependentWitness(){
  <p role="status"><strong>İki kontrol: ${review.bothAccept?'ACCEPT':'REJECT'}</strong> · Ayrı kayıt kontrolü: <strong>${esc(review.status)}</strong></p>
  <p class="eval-caveat">${review.commonModeDetected?'Ortak kör nokta tespit edildi: bildirilen sayıya güvenmek yeterli değil.':'Bu sabit sentetik kayıt setindeki kontroller eşleşiyor; üretim güvenilirliği kanıtlanmadı.'}</p>
  <p class="eval-caveat"><strong>Yeniden doğrulama için:</strong> ${esc(review.requiredEvidence)}</p>
+ ${renderAdjudication()}
  <p class="eval-caveat">Kayıt listesi de aynı kod tabanında hazırlanmış <strong>sentetik</strong> veridir; bağımsız saha kanıtı değildir. <a class="plain-link" href="${downloadUrl('independent-oracle-witness-workbook.md')}" download>Çalışma kitabı</a></p>
  </details>`;
 }
@@ -310,9 +329,15 @@ function render(){let raw=decodeURIComponent((location.hash||'#home').slice(1));
 switch(route){case 'home':html=renderHome();break;case 'curriculum':html=renderCurriculum();break;case 'module':html=renderModule(id);break;case 'lesson':html=renderLesson(id);break;case 'labs':html=renderLabs();break;case 'lab':html=renderLab(id);break;case 'architecture':html=renderArchitecture();break;case 'workshop':html=renderWorkshop();break;case 'context-studio':html=renderContextStudio();break;case 'compaction-studio':html=renderCompactionStudio();break;case 'reliability-eval':html=renderReliabilityEvaluation();break;case 'eval-robustness':html=renderEvaluationRobustness();break;case 'glossary':html=renderGlossary();break;case 'resources':html=renderResources();break;default:html=render404();}
 page.innerHTML=html;document.body?.classList?.toggle('is-lesson',route==='lesson');document.body?.classList?.toggle('reading-mode',route==='lesson'&&readingMode);const focus=document.querySelector('#focus-toggle');if(focus){focus.setAttribute('aria-pressed',String(route==='lesson'&&readingMode));focus.setAttribute('aria-label',readingMode?'Odak modunu kapat':'Odak modunu aç');focus.textContent=readingMode?'Normal görünüm':'Odak modu';}const expanded=document.querySelector('#advanced-nav');if(expanded&&['workshop','context-studio','compaction-studio','reliability-eval','eval-robustness'].includes(route))expanded.open=true;const aux=document.querySelector('#aux-nav');if(aux&&['architecture','glossary','resources'].includes(route))aux.open=true;status();if(route==='lab'){if(id==='cache')renderCacheOutput();if(id==='policy')renderPolicyOutput();if(id==='router')renderRouter();if(id==='context')renderContextOutput();}window.scrollTo({top:0,behavior:'instant'});}
 function onClick(e){
+const adjudication=e.target.closest('[data-adjudication-action]');
+if(adjudication){
+ const action=adjudication.dataset.adjudicationAction;
+ if(J.options(witnessMode).some(o=>o.id===action)){adjudicationAction=action;adjudicationOpen=true;witnessOpen=true;oracleOpen=true;page.innerHTML=renderEvaluationRobustness();}
+ return;
+}
 const witness=e.target.closest('[data-witness-mode]');
 if(witness){const mode=witness.dataset.witnessMode;
- if(I.MODES.some(x=>x.id===mode)){witnessMode=mode;witnessOpen=true;oracleOpen=true;page.innerHTML=renderEvaluationRobustness();}
+ if(I.MODES.some(x=>x.id===mode)){witnessMode=mode;witnessOpen=true;oracleOpen=true;adjudicationAction=null;adjudicationOpen=false;page.innerHTML=renderEvaluationRobustness();}
  return;
 }
 const oracle=e.target.closest('[data-oracle-mode]');
@@ -323,7 +348,7 @@ if(oracle){
 }
 const injected=e.target.closest('[data-injection-case],[data-injection-mode],[data-injection-choice]');
 if(injected){
- if(injected.dataset.injectionCase!==undefined){const index=Number(injected.dataset.injectionCase);if(Number.isInteger(index)&&index>=0&&index<F.CASES.length){injectionIndex=index;injectionMode='baseline';injectionChoice=null;oracleMode='reference';oracleOpen=false;witnessMode='healthy';witnessOpen=false;}}
+ if(injected.dataset.injectionCase!==undefined){const index=Number(injected.dataset.injectionCase);if(Number.isInteger(index)&&index>=0&&index<F.CASES.length){injectionIndex=index;injectionMode='baseline';injectionChoice=null;oracleMode='reference';oracleOpen=false;witnessMode='healthy';witnessOpen=false;adjudicationOpen=false;adjudicationAction=null;}}
  if(injected.dataset.injectionMode!==undefined&&['baseline','injected'].includes(injected.dataset.injectionMode)){injectionMode=injected.dataset.injectionMode;injectionChoice=null;}
  if(injected.dataset.injectionChoice!==undefined&&injectionMode==='injected'){F.chooseRepair(F.CASES[injectionIndex].id,injected.dataset.injectionChoice);injectionChoice=injected.dataset.injectionChoice;}
  page.innerHTML=renderEvaluationRobustness();return;
