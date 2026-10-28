@@ -68,3 +68,34 @@ function holdout(policyId,foldId,options={}){
 }
 root.RobustnessEngine=Object.freeze({TASK_ID:R.TASK_ID,PROFILES,DISPUTES,FOLDS,MANIFEST,verifyManifest,evaluate,compare,holdout});
 })(typeof window!=='undefined'?window:globalThis);
+
+/* v0.9 educational claim audit. Decisions never authorize an operation. */
+(function(root){
+'use strict';
+const CASES=[
+ {id:'paired-leakage',title:'Aynı görevin iki fazı ayrıldı',setup:'Incoming ve recovered aynı task kimliğini, revizyonu ve onarım yolunu paylaşırken train/test kümelerine bölündü.',question:'Bağımsızlığı hangi karar korur?',options:[['group','Senaryo bazında birlikte ayır'],['shuffle','Satırları karıştır'],['weight','Satır ağırlığını artır']],correctId:'group',explanation:'İki faz bağımsız değildir. Grup temelli bölümleme gerekir; satırları karıştırmak contamination sorununu çözmez.',evidence:'Scenario ID ile grouped split; train/test grup kesişimi sıfır; sürümlü test manifesti.',limit:'Grouped split bile dokuz sentetik senaryonun ötesine genelleme sağlamaz.'},
+ {id:'holdout-tuning',title:'Holdout üzerinde seçim yapıldı',setup:'Dört politika aynı test verisinde tekrar tekrar karşılaştırılıp en iyi görünen seçildi.',question:'İddiayı bağımsız doğrulamak için ne yaparsın?',options:[['freeze','Politikayı dondur, yeni untouched test ayır'],['reuse','Aynı skorla dış iddia yayımla'],['reweight','Test ağırlıklarını değiştir']],correctId:'freeze',explanation:'Seçim sırasında kullanılan holdout artık bağımsız test değildir; yeni dokunulmamış küme gerekir.',evidence:'Selection log, frozen policy ve seçimden bağımsız nihai holdout.',limit:'Yeni test de popülasyon ve örnekleme stratejisi olmadan üretim kanıtı olmaz.'},
+ {id:'disputed-labels',title:'İtirazlı gold labels çıkarıldı',setup:'Dört tartışmalı kayıt atıldı ve skor yükseldi; bağımsız adjudication yapılmadı.',question:'Kanıtı hangi işlem korur?',options:[['review','Kör bağımsız adjudication yap ve duyarlılık raporla'],['omit','Zor kayıtları gizle'],['flip','Hipotezleri otomatik doğru say']],correctId:'review',explanation:'İtiraz yeni truth değildir; kanıt ve kör değerlendirme gerekir, dahil/hariç sonuçlar açık olmalıdır.',evidence:'Makbuz provenance, sürümlü gold labels, adjudication protokolü ve açık paydalar.',limit:'Etiket revizyonu önceki confusion matrix ile karşılaştırmayı geçersizleştirir.'},
+ {id:'zero-fn',title:'13 riskli sentetik durumda FN sıfır',setup:'Dokuz senaryodan türeyen riskli durumlarda Evidence-gated için gözlenen FN=0.',question:'Hangi güvenlik iddiası geçerlidir?',options:[['fixture','Yalnız bu sabit fixture sonucunu bildir'],['production','Üretimde sıfır risk ilan et'],['weighted','Ağırlıkları yeni örnek say']],correctId:'fixture',explanation:'Sıfır gözlenen hata sıfır gerçek risk değildir; eşleşmiş sentetik satırlar bağımsız örnek sayılmaz.',evidence:'Yeni bağımsız görev örneklemesi, risk dilimleri, belirsizlik ve saha verisi.',limit:'Bağımsız Bernoulli varsayımı kurulmadığı için basit güven aralığı burada geçerli değildir.'},
+ {id:'synthetic-shift',title:'Revizyon riski sentetik olarak ×4 ağırlıklandı',setup:'Üç eski senaryonun ağırlığı artırıldı; üretimden yeni gözlem alınmadı.',question:'Bulguyu nasıl yayımlarsın?',options:[['sensitivity','Yalnız sentetik duyarlılık analizi olarak'],['incidence','Gerçek hata insidansı dört kat arttı diyerek'],['sample','Ağırlıklı toplamı bağımsız n sayarak']],correctId:'sensitivity',explanation:'Ağırlıklar gerçek frekans ve yeni olay üretmez; yalnız varsayımsal dağılım etkisini gösterir.',evidence:'Temsili saha örneklemesi ve gerçek olay prevalansı verisi.',limit:'Yeniden ağırlıklandırma gerçek-world incidence veya dış geçerlilik kanıtı değildir.'}
+].map(c=>Object.freeze({...c,options:Object.freeze(c.options.map(([id,label])=>Object.freeze({id,label})))}));
+const byId=new Map(CASES.map(c=>[c.id,c]));
+function assess(id,choiceId){
+ const c=byId.get(id);if(!c)throw new Error('Unknown audit case: '+id);
+ const choice=c.options.find(x=>x.id===choiceId);if(!choice)throw new Error('Unknown audit choice: '+choiceId);
+ return Object.freeze({correct:choiceId===c.correctId,status:'ADVISORY_ONLY',explanation:c.explanation,evidence:c.evidence,limit:c.limit});
+}
+function summary(answers){
+ if(!answers||Array.isArray(answers)||typeof answers!=='object')throw new Error('Invalid audit answers');
+ let answered=0,correct=0;
+ for(const [id,choice] of Object.entries(answers)){answered++;if(assess(id,choice).correct)correct++;}
+ return {answered,correct,total:CASES.length,complete:answered===CASES.length};
+}
+function observationClaim({unsafeReleases,unsafeObservations,independent=false}){
+ if(!Number.isInteger(unsafeObservations)||unsafeObservations<=0||!Number.isInteger(unsafeReleases)||unsafeReleases<0||unsafeReleases>unsafeObservations)throw new Error('Invalid observations');
+ const p=unsafeReleases/unsafeObservations,z=1.96,z2=z*z,n=unsafeObservations;
+ const upper=(p+z2/(2*n)+z*Math.sqrt((p*(1-p)+z2/(4*n))/n))/(1+z2/n);
+ return {allowed:'FIXTURE_ONLY',observedRate:p,independenceAssured:independent===true,illustrativeUpperBound:independent===true?upper:null,productionGuarantee:false};
+}
+root.EvaluationAuditEngine=Object.freeze({CASES:Object.freeze(CASES),assess,summary,observationClaim});
+})(typeof window!=='undefined'?window:globalThis);
