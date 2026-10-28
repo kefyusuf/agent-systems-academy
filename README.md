@@ -22,6 +22,7 @@ The learning UI and course material are in Turkish. Code, architectural document
 - v0.14 accessibility maintenance: keyboard skip link, focused main navigation, persistent status announcements, visible nested disclosure focus, restoration after dynamic option updates, and calmer 44px mobile controls; no curriculum or evaluation model changes.
 - v0.15 quiet learning layout: a single next-lesson action on the homepage; six advanced evaluation topics folded by default except the first, with native keyboard summary controls, preserved open states, and no content removal.
 - v0.16 quiet curriculum and reading: fourteen keyboard-accessible compact module rows with one next-unfinished step; lesson content in one readable column without duplicate side navigation or decorative byline. All tasks, source links, evaluation controls, and progress remain unchanged.
+- v0.17 learning flow assurance: regression coverage for the home → curriculum → module → lesson route chain across all 42 lessons, correct completed-course home state, and skip-to-main keyboard navigation without SPA hash corruption. No new learning content or services.
 - Local progress tracking in browser `localStorage`
 - Static Astro output, no accounts, backend, telemetry, LLM provider, paid API, or MCP access needed
 

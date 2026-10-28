@@ -96,7 +96,7 @@ function deepDiveMarkup(l){
  <div class="deep-sources"><strong>İlgili resmî kaynaklar</strong>${sourceLinks(d.sourceIds)}</div>
  </section>`;
 }
-function nextLesson(){return courses.find(l=>!progress.completed.includes(l.id))||courses[0];}
+function nextLesson(){return courses.find(l=>!progress.completed.includes(l.id))||null;}
 function renderHome(){
  crumb('Overview');
  const count=progress.completed.length, next=nextLesson();
@@ -104,9 +104,9 @@ function renderHome(){
  <div class="hero-tag">ÖĞRENME YOLU · 14 MODÜL</div>
  <h1>Bir konuya odaklan.<br><em>Adım adım ilerle.</em></h1>
  <p>Güvenilir coding agent sistemlerini temel kavramlardan başlayarak öğren. Her adımda tek ders, tek hedef.</p>
- <p class="home-next-label">SIRADAKİ DERS</p>
- <p class="home-next-title">${esc(next.title)}</p>
- <div class="hero-actions"><a class="btn btn-primary" href="#lesson/${next.id}">${count?'Kaldığın yerden devam et':'İlk derse başla'} <span>→</span></a><a class="btn btn-secondary" href="#curriculum">Tüm dersler</a></div>
+ <p class="home-next-label">${next?'SIRADAKİ DERS':'ÖĞRENME YOLU TAMAMLANDI'}</p>
+ <p class="home-next-title">${next?esc(next.title):'Tüm dersleri tamamladın.'}</p>
+ <div class="hero-actions">${next?`<a class="btn btn-primary" href="#lesson/${next.id}">${count?'Kaldığın yerden devam et':'İlk derse başla'} <span>→</span></a><a class="btn btn-secondary" href="#curriculum">Tüm dersler</a>`:'<a class="btn btn-primary" href="#curriculum">Müfredatı gözden geçir <span>→</span></a>'}</div>
  <p class="hero-foot">${count} / ${courses.length} ders tamamlandı. İlerleme bu tarayıcıda saklanır.</p>
  </div></section></div>`;
 }
@@ -346,7 +346,7 @@ function renderEvaluationRobustness(){
 }
 function render404(){crumb('Not found');return `<div class="page-inner not-found"><h1>404 — Yol bulunamadı</h1><p>Bu ders veya laboratuvar müfredatta yok.</p>${navLink('Genel bakışa dön','#home')}</div>`;}
 let readingMode=false;
-function render(){let raw=decodeURIComponent((location.hash||'#home').slice(1));if(raw.startsWith('intro'))raw='home';const [route,id]=raw.split('/');currentRoute=route;document.querySelectorAll('[data-route]').forEach(a=>a.classList.toggle('active',a.dataset.route===route||(route==='module'||route==='lesson')&&a.dataset.route==='curriculum'||route==='lab'&&a.dataset.route==='labs'));let html;
+function render(){let raw=decodeURIComponent((location.hash||'#home').slice(1));if(raw==='page'||raw.startsWith('intro'))raw='home';const [route,id]=raw.split('/');currentRoute=route;document.querySelectorAll('[data-route]').forEach(a=>a.classList.toggle('active',a.dataset.route===route||(route==='module'||route==='lesson')&&a.dataset.route==='curriculum'||route==='lab'&&a.dataset.route==='labs'));let html;
 switch(route){case 'home':html=renderHome();break;case 'curriculum':html=renderCurriculum();break;case 'module':html=renderModule(id);break;case 'lesson':html=renderLesson(id);break;case 'labs':html=renderLabs();break;case 'lab':html=renderLab(id);break;case 'architecture':html=renderArchitecture();break;case 'workshop':html=renderWorkshop();break;case 'context-studio':html=renderContextStudio();break;case 'compaction-studio':html=renderCompactionStudio();break;case 'reliability-eval':html=renderReliabilityEvaluation();break;case 'eval-robustness':html=renderEvaluationRobustness();break;case 'glossary':html=renderGlossary();break;case 'resources':html=renderResources();break;default:html=render404();}
 page.innerHTML=html;document.body?.classList?.toggle('is-lesson',route==='lesson');document.body?.classList?.toggle('reading-mode',route==='lesson'&&readingMode);const focus=document.querySelector('#focus-toggle');if(focus){focus.setAttribute('aria-pressed',String(route==='lesson'&&readingMode));focus.setAttribute('aria-label',readingMode?'Odak modunu kapat':'Odak modunu aç');focus.textContent=readingMode?'Normal görünüm':'Odak modu';}const expanded=document.querySelector('#advanced-nav');if(expanded&&['workshop','context-studio','compaction-studio','reliability-eval','eval-robustness'].includes(route))expanded.open=true;const aux=document.querySelector('#aux-nav');if(aux&&['architecture','glossary','resources'].includes(route))aux.open=true;status();if(route==='lab'){if(id==='cache')renderCacheOutput();if(id==='policy')renderPolicyOutput();if(id==='router')renderRouter();if(id==='context')renderContextOutput();}window.scrollTo({top:0,behavior:'instant'});}
 function onClick(e){
@@ -447,6 +447,8 @@ page.addEventListener('click',onClick);
 page.addEventListener('input',e=>{const input=e.target.closest('[data-lab-field]');if(input){const id=input.dataset.labField;labState[id]=Number(input.value);document.querySelector('#out-'+id).textContent=f(labState[id])+(id==='stability'?'%':'');if(currentRoute==='lab'){if(location.hash==='#lab/cache')renderCacheOutput();if(location.hash==='#lab/context')renderContextOutput();}}const filter=e.target.closest('#glossary-filter');if(filter){const val=filter.value;const list=D.glossary.filter(g=>slug(g.term+' '+g.description).includes(slug(val)));document.querySelector('.glossary-grid').innerHTML=list.map(g=>`<div class="glossary-item"><h3>${esc(g.term)}</h3><p>${esc(g.description)}</p></div>`).join('')||'<p>Bu kelimeyle eşleşen terim yok.</p>';document.querySelector('.glossary-tools > span').textContent=list.length+' TERİM';}});
 page.addEventListener('change',e=>{const input=e.target.closest('[data-lab-select]');if(input){labState[input.dataset.labSelect]=input.value;renderPolicyOutput();}});
 window.addEventListener('hashchange',()=>{render();page.focus?.({preventScroll:true});});
+// A native #page jump changes the SPA hash; focus main without triggering routing.
+document.querySelector('.skip-link')?.addEventListener('click',e=>{e.preventDefault();page.focus?.();});
 const dialog=document.querySelector('#search-dialog'), searchInput=document.querySelector('#global-search');
 function closeSearch(){dialog.close();}function showSearch(){dialog.showModal();searchInput.value='';searchResults('');searchInput.focus();}
 function searchResults(query){const q=slug(query.trim());const found=courses.filter(l=>slug(l.title+' '+l.summary+' '+l.module.title+' '+l.deepDive.mechanism+' '+l.deepDive.failureMode).includes(q)).slice(0,14);const gloss=D.glossary.filter(g=>slug(g.term+' '+g.description).includes(q)).slice(0,5);document.querySelector('#search-results').innerHTML=(q?`<div class="search-result-group">DERSLER (${found.length})</div>`:'<div class="search-result-group">ÖNERİLEN DERSLER</div>')+found.map(l=>`<a href="#lesson/${l.id}" class="search-result"><span>▤</span><div><strong>${esc(l.title)}</strong><small>${esc(l.module.title)}</small></div><span>↗</span></a>`).join('')+(gloss.length&&q?`<div class="search-result-group">SÖZLÜK (${gloss.length})</div>`+gloss.map(g=>`<a href="#glossary" class="search-result"><span>≡</span><div><strong>${esc(g.term)}</strong><small>${esc(g.description)}</small></div><span>↗</span></a>`).join(''):'')+(!found.length&&!gloss.length?'<p class="no-search">Eşleşen içerik bulunamadı.</p>':'');}
