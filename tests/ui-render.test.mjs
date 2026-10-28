@@ -19,7 +19,7 @@ function fixture(hash){
     querySelectorAll(){return [];},
     addEventListener(){},
   };
-  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
+  const context={document:doc,window:{AGENT_CURRICULUM:data,LabEngine:globalThis.LabEngine,WorkshopEngine:globalThis.WorkshopEngine,ContextStudioEngine:globalThis.ContextStudioEngine,CompactionEngine:globalThis.CompactionEngine,ReliabilityEngine:globalThis.ReliabilityEngine,RobustnessEngine:globalThis.RobustnessEngine,EvaluationAuditEngine:globalThis.EvaluationAuditEngine,EvidenceInjectionEngine:globalThis.EvidenceInjectionEngine,addEventListener(){},scrollTo(){}},location:{hash,protocol:'http:'},navigator:{},localStorage:{getItem(){return null;},setItem(){}},setTimeout:()=>0,clearTimeout(){},console};
   vm.runInNewContext(app,context,{filename:'public/app.js'});
   return {page,nodes,handlers};
 }
@@ -210,4 +210,28 @@ test('claim audit shows one choice at a time and never grants execution',()=>{
  click({auditAnswer:'production'});
  assert.match(page.innerHTML,/Bu karar kanıtı aşar/);
  assert.equal(page.innerHTML.match(/data-audit-answer=/g)?.length,3);
+});
+
+test('v0.10 shows five evidence faults with one active scenario',()=>{
+ const {page}=fixture('#eval-robustness');
+ assert.match(page.innerHTML,/FAILURE INJECTION/);
+ assert.equal(page.innerHTML.match(/data-injection-case=/g)?.length,5);
+ assert.equal(page.innerHTML.match(/data-injection-mode=/g)?.length,2);
+ assert.match(page.innerHTML,/FIXTURE_ONLY/);
+ assert.equal(page.innerHTML.match(/data-injection-choice=/g)?.length ?? 0,0);
+});
+test('v0.10 recovery cannot bypass re-verification and case switch resets the injected state',()=>{
+ const {page,handlers}=fixture('#eval-robustness');
+ const click=(selector,dataset)=>handlers.click({target:{closest(s){return s.split(',').includes(selector)?{dataset}:null;}}});
+ click('[data-injection-mode]',{injectionMode:'injected'});
+ assert.match(page.innerHTML,/CLAIM_BLOCKED/);
+ assert.equal(page.innerHTML.match(/data-injection-choice=/g)?.length,3);
+ click('[data-injection-choice]',{injectionChoice:'group-split'});
+ assert.match(page.innerHTML,/REVERIFY_REQUIRED/);
+ click('[data-injection-case]',{injectionCase:'3'});
+ assert.match(page.innerHTML,/Risk denominator/);
+ assert.match(page.innerHTML,/FIXTURE_ONLY/);
+ click('[data-injection-mode]',{injectionMode:'injected'});
+ assert.match(page.innerHTML,/denominator/);
+ assert.match(page.innerHTML,/null/);
 });

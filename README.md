@@ -14,6 +14,8 @@ The learning UI and course material are in Turkish. Code, architectural document
 - v0.4 Context & Cache Studio: nine A/B scenarios testing prefix stability, schema ordering, freshness, evidence compaction, handoff, untrusted data, token budget and TTL; six revision/trust/evidence invariants
 - English downloadable capstone worksheet (task contracts, policy matrix, eight eval fixtures), worked case and review rubric
 - v0.7 robustness view: four hypothetical risk-distribution profiles, disputed labels, scenario-grouped holdout, evaluation manifest freshness
+- v0.9 claim audit: five advisory cases on leakage, held-out evaluation, disputed labels, zero observed FN and synthetic weights
+- v0.10 evaluation failure injection: one corrupted evidence field per existing case, explicit claim-blocking and re-verification-only recovery decisions
 - Local progress tracking in browser `localStorage`
 - Static Astro output, no accounts, backend, telemetry, LLM provider, paid API, or MCP access needed
 

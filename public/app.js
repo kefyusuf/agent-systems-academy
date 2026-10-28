@@ -8,8 +8,9 @@ const H = window.CompactionEngine;
 const R = window.ReliabilityEngine;
 const Q = window.RobustnessEngine;
 const A = window.EvaluationAuditEngine;
+const F = window.EvidenceInjectionEngine;
 const page = document.querySelector('#page');
-if (!D || !E || !W || !C || !H || !R || !Q || !A || !page) return;
+if (!D || !E || !W || !C || !H || !R || !Q || !A || !F || !page) return;
 const courses = D.modules.flatMap(m => m.lessons.map(l => ({...l,module:m})));
 const STORAGE = 'agent-academy-progress-v1';
 function loadProgress(){try{const s=JSON.parse(localStorage.getItem(STORAGE)||'{}');return {completed:Array.isArray(s.completed)?s.completed:[],passed:Array.isArray(s.passed)?s.passed:[]};}catch{return {completed:[],passed:[]};}}
@@ -36,6 +37,9 @@ let robustFold='revision';
 let robustPolicy='gated';
 let auditIndex=0;
 const auditAnswers={};
+let injectionIndex=0;
+let injectionMode='baseline';
+let injectionChoice=null;
 function notify(msg){const t=document.querySelector('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>t.classList.remove('show'),3200);}
 function done(m){return m.lessons.filter(l=>progress.completed.includes(l.id)).length;}
 function status(){const n=progress.completed.length;const total=courses.length;document.querySelector('#sidebar-done').textContent=`${n} / ${total}`;document.querySelector('#sidebar-bar').style.width=`${n/total*100}%`;document.querySelector('#course-count').textContent=D.modules.length;}
@@ -222,6 +226,26 @@ function renderClaimAudit(){
  ${result?`<div role="status"><p><strong>${result.correct?'Kanıt sınırı korundu':'Bu karar kanıtı aşar'}</strong></p><p>${esc(result.explanation)}</p><p><strong>Gerekli kanıt:</strong> ${esc(result.evidence)}</p><p><strong>İddia sınırı:</strong> ${esc(result.limit)}</p></div>`:'<p class="eval-caveat">Teknik gerekçeyi görmek için bir karar seç.</p>'}</div>
  <p class="eval-caveat">${progress.answered}/${progress.total} vaka yanıtlandı · ${progress.correct} uygun karar. Bu skor bir güvenlik sertifikası değildir. <a class="plain-link" href="${downloadUrl('evaluation-claim-audit-workbook.md')}" download>Teknik çalışma kitabı</a></p></section>`;
 }
+function renderFailureInjection(){
+ const c=F.CASES[injectionIndex],r=F.inspect(c.id,injectionMode);
+ const chosen=injectionChoice?F.chooseRepair(c.id,injectionChoice):null;
+ const label=value=>value===null?'null':String(value);
+ return `<section class="eval-section" id="failure-injection">
+ <div class="ctx-section-title"><div>${areaLabel('06 / FAILURE INJECTION · v0.10')}<h2>Tek bir kanıt bozulursa ne olur?</h2></div></div>
+ <p class="eval-caveat">Aynı beş claim audit vakası üzerinde tek alanı boz. Kontrolün neden engellendiğini ve kanıtı nasıl yeniden doğrulayacağını incele.</p>
+ <div class="eval-choice-line" role="group" aria-label="Injection case">${F.CASES.map((x,i)=>`<button type="button" class="eval-chip ${i===injectionIndex?'active':''}" data-injection-case="${i}" aria-pressed="${i===injectionIndex}">${i+1}. vaka</button>`).join('')}</div>
+ <div class="eval-recovery-plan"><span class="case-kicker">${injectionIndex+1} / ${F.CASES.length} · SYNTHETIC FIXTURE</span><h3>${esc(c.title)}</h3>
+ <div class="eval-choice-line" role="group" aria-label="Injection mode">
+ <button type="button" class="eval-chip ${injectionMode==='baseline'?'active':''}" data-injection-mode="baseline" aria-pressed="${injectionMode==='baseline'}">Sağlam kanıt</button>
+ <button type="button" class="eval-chip ${injectionMode==='injected'?'active':''}" data-injection-mode="injected" aria-pressed="${injectionMode==='injected'}">Kanıtı boz</button></div>
+ <p class="eval-caveat">Tek değişen alan: <code>${esc(c.evidenceKey)}</code> · Beklenen: <code>${esc(label(r.check.expected))}</code> · Okunan: <code>${esc(label(r.check.actual))}</code></p>
+ <p role="status"><strong>${esc(r.status)}</strong> · ${r.evidenceValid?'Kontrol geçti. Yalnız bu sentetik fixture için sınırlı gözlem yapılabilir.':esc(r.failure)}</p>
+ ${injectionMode==='injected'?`<p><strong>Güvenli kurtarma kararı nedir?</strong></p>
+ <div class="eval-choice-line" role="group" aria-label="Recovery decision">${c.options.map(o=>`<button type="button" class="eval-chip ${injectionChoice===o.id?'active':''}" data-injection-choice="${esc(o.id)}" aria-pressed="${injectionChoice===o.id}">${esc(o.label)}</button>`).join('')}</div>
+ ${chosen?`<p role="status"><strong>${esc(chosen.status)}</strong> · ${esc(chosen.message)}</p>`:''}`:''}
+ <p class="eval-caveat"><strong>Gerekli kanıt:</strong> ${esc(r.requiredEvidence)}</p></div>
+ <p class="eval-caveat">Read-only simülasyon: gerçek araç çağrısı, izin, üretim garantisi veya otomatik DONE yok. <a class="plain-link" href="${downloadUrl('evaluation-failure-injection-workbook.md')}" download>Çalışma kitabı</a></p></section>`;
+}
 function renderEvaluationRobustness(){
  crumb('Evaluation robustness');
  const compared=Q.compare({profile:robustProfile,labels:robustLabels});
@@ -239,6 +263,7 @@ function renderEvaluationRobustness(){
  <section class="eval-section"><div class="ctx-section-title"><div>${areaLabel('03 / HOLDOUT & LEAKAGE')}<h2>Senaryoyu bütün olarak ayır</h2></div></div><div class="eval-choice-line" role="group" aria-label="Holdout fold">${Q.FOLDS.map(f=>chip(f.title,f.id,robustFold,'fold')).join('')}</div><p class="eval-caveat">Bu gerçek eğitme veya hyperparameter tuning değildir. Stratified/temporal holdout gerektiren üretim değerlendirmesinin veri sızıntısı tuzağını gösterir.</p><div class="eval-phase-grid"><div class="eval-phase"><small>TRAIN / 6 senaryo</small><h3>12 paired states</h3><p>${matrix(fold.train.matrix)}</p><p class="eval-outcome">Unsafe ALLOW: <strong>${fmt(fold.train.rates.unsafeRelease)}</strong></p></div><div class="eval-phase"><small>HOLDOUT / 3 senaryo</small><h3>6 paired states</h3><p>${matrix(fold.test.matrix)}</p><p class="eval-outcome">Unsafe ALLOW: <strong>${fmt(fold.test.rates.unsafeRelease)}</strong></p><small>${fold.fold.scenarioIds.map(esc).join(' · ')}</small></div></div></section>
  <section class="eval-section"><div class="ctx-section-title"><div>${areaLabel('04 / EVIDENCE FRESHNESS')}<h2>Değerlendirme kanıtı ne zaman eskir?</h2></div></div><p class="eval-caveat">Manifest, fixture / gold labels / policy / grouping sürümlerini sabitler. Değişiklik olduğunda önceki skor otomatik olarak yeni sistemin skoru sayılmaz.</p><div class="ctx-contract-chips">${Object.entries(Q.MANIFEST).map(([k,v])=>`<span>${esc(k)}: ${esc(v)}</span>`).join('')}</div><div class="eval-recovery-plan"><span class="case-kicker">CURRENT MANIFEST</span><h3>${freshness.current?'All four references match':'Evaluation is stale'}</h3><p>Manifest değiştiğinde yeniden değerlendirme gerekir. Bu kontrol fixture verisinin kriptografik kimliğini veya dış kanıt güvenilirliğini kanıtlamaz.</p></div></section>
  ${renderClaimAudit()}
+ ${renderFailureInjection()}
  <div class="ctx-outro"><strong>Engineering exercise</strong><p>Hangi profil altında yanlış karar maliyeti artıyor? Aynı vakadan türetilen iki durum train/test olarak bölünseydi nasıl data leakage oluşurdu? Bir uyuşmazlık kapatılmadan raporun “%100 safe” iddiası neden geçersiz kalır?</p><a class="btn btn-primary" href="${downloadUrl('evaluation-robustness-workbook.md')}" download>Robustness Workbook indir ↗</a><a class="btn btn-secondary" href="#reliability-eval">v0.6 Reliability Evaluation ↗</a><p class="ctx-notice">All profiles, labels and costs are synthetic examples. No production performance claim, LLM request, backend, login or telemetry.</p></div></div>`;
 }
 function render404(){crumb('Not found');return `<div class="page-inner not-found"><h1>404 — Yol bulunamadı</h1><p>Bu ders veya laboratuvar müfredatta yok.</p>${navLink('Genel bakışa dön','#home')}</div>`;}
@@ -247,6 +272,13 @@ function render(){let raw=decodeURIComponent((location.hash||'#home').slice(1));
 switch(route){case 'home':html=renderHome();break;case 'curriculum':html=renderCurriculum();break;case 'module':html=renderModule(id);break;case 'lesson':html=renderLesson(id);break;case 'labs':html=renderLabs();break;case 'lab':html=renderLab(id);break;case 'architecture':html=renderArchitecture();break;case 'workshop':html=renderWorkshop();break;case 'context-studio':html=renderContextStudio();break;case 'compaction-studio':html=renderCompactionStudio();break;case 'reliability-eval':html=renderReliabilityEvaluation();break;case 'eval-robustness':html=renderEvaluationRobustness();break;case 'glossary':html=renderGlossary();break;case 'resources':html=renderResources();break;default:html=render404();}
 page.innerHTML=html;document.body?.classList?.toggle('is-lesson',route==='lesson');document.body?.classList?.toggle('reading-mode',route==='lesson'&&readingMode);const focus=document.querySelector('#focus-toggle');if(focus){focus.setAttribute('aria-pressed',String(route==='lesson'&&readingMode));focus.setAttribute('aria-label',readingMode?'Odak modunu kapat':'Odak modunu aç');focus.textContent=readingMode?'Normal görünüm':'Odak modu';}const expanded=document.querySelector('#advanced-nav');if(expanded&&['workshop','context-studio','compaction-studio','reliability-eval','eval-robustness'].includes(route))expanded.open=true;const aux=document.querySelector('#aux-nav');if(aux&&['architecture','glossary','resources'].includes(route))aux.open=true;status();if(route==='lab'){if(id==='cache')renderCacheOutput();if(id==='policy')renderPolicyOutput();if(id==='router')renderRouter();if(id==='context')renderContextOutput();}window.scrollTo({top:0,behavior:'instant'});}
 function onClick(e){
+const injected=e.target.closest('[data-injection-case],[data-injection-mode],[data-injection-choice]');
+if(injected){
+ if(injected.dataset.injectionCase!==undefined){const index=Number(injected.dataset.injectionCase);if(Number.isInteger(index)&&index>=0&&index<F.CASES.length){injectionIndex=index;injectionMode='baseline';injectionChoice=null;}}
+ if(injected.dataset.injectionMode!==undefined&&['baseline','injected'].includes(injected.dataset.injectionMode)){injectionMode=injected.dataset.injectionMode;injectionChoice=null;}
+ if(injected.dataset.injectionChoice!==undefined&&injectionMode==='injected'){F.chooseRepair(F.CASES[injectionIndex].id,injected.dataset.injectionChoice);injectionChoice=injected.dataset.injectionChoice;}
+ page.innerHTML=renderEvaluationRobustness();return;
+}
 const audit=e.target.closest('[data-audit-case],[data-audit-answer]');
 if(audit){
  if(audit.dataset.auditCase!==undefined){const i=Number(audit.dataset.auditCase);if(Number.isInteger(i)&&i>=0&&i<A.CASES.length)auditIndex=i;}
