@@ -399,3 +399,12 @@ body.reading-mode .lesson-block p{font-size:16px}
  .lesson-view .lesson-block{padding-top:28px}
 }
 @media(prefers-reduced-motion:reduce){.curriculum-row{transition:none}}
+
+/* v0.19: measured narrow viewport and intentional main focus */
+/* #page receives programmatic focus during hash routing; show a main outline only
+   when keyboard users explicitly activate the skip-to-content link. */
+#page:focus{outline:none}
+#page.skip-target:focus{outline:2px solid var(--accent);outline-offset:-2px}
+/* At 320px the redundant mobile-brand pushes Search 10px beyond the viewport.
+   The permanent sidebar brand remains visible; do not hide either action. */
+@media(max-width:359px){.mobile-brand{display:none}.topbar{padding-inline:12px}.topbar-right{margin-left:auto;gap:8px}}
