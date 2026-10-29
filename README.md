@@ -161,3 +161,7 @@ The interface uses a quieter reading-first hierarchy. Workspaces are grouped und
 ## v0.18 live visual QA checkpoint
 
 A read-only live browser review sampled the homepage, curriculum, first module and first two lessons at a desktop-size viewport. No actionable desktop layout defect was confirmed. **Mobile responsiveness and keyboard-only focus behavior were not conclusively verified**, so the app remains at v0.17 and no speculative UI patch was made. See [v0.18 Live Visual QA](docs/LIVE-VISUAL-QA-v0.18.md) for observed results, evidence scope and the remaining acceptance checklist.
+
+## v0.19 — Mobile viewport and keyboard focus repair
+
+A Chromium run against the exact published GitHub Pages artifact found a **10px horizontal overflow on 320px lesson views**, caused by duplicated mobile branding alongside Focus and Search. The v0.19 patch hides only that duplicate brand below 360px and retains both actions. Main focus during hash navigation no longer draws the browser's full-frame outline; keyboard skip-link users still receive an explicit visible focus cue. See [Mobile & Keyboard QA](docs/MOBILE-KEYBOARD-QA-v0.19.md). The v0.18 QA checkpoint was documentation-only; this is the next application release.
