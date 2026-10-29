@@ -157,3 +157,7 @@ Repository visibility is independent of source-code licensing. No license has be
 ## v0.8 visual design
 
 The interface uses a quieter reading-first hierarchy. Workspaces are grouped under **Atölyeler**, references under **Diğer kaynaklar**, and every lesson has an optional, reversible **Odak modu**. Reading mode never changes lesson progress, simulator outcomes, or permissions. See `docs/RELEASE-NOTES-v0.8.md`.
+
+## v0.18 live visual QA checkpoint
+
+A read-only live browser review sampled the homepage, curriculum, first module and first two lessons at a desktop-size viewport. No actionable desktop layout defect was confirmed. **Mobile responsiveness and keyboard-only focus behavior were not conclusively verified**, so the app remains at v0.17 and no speculative UI patch was made. See [v0.18 Live Visual QA](docs/LIVE-VISUAL-QA-v0.18.md) for observed results, evidence scope and the remaining acceptance checklist.
