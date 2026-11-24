@@ -16,6 +16,6 @@
     "build:pages": "node scripts/build-pages.mjs"
   },
   "dependencies": {
-    "astro": "^5.16.0"
+    "astro": "^7.4.13"
   }
 }
